@@ -1,0 +1,22 @@
+{
+  "name": "secure-grade-vetting-sys",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "backend": "cd backend && node server.js",
+    "frontend": "npx http-server ./SecureGrade-Frontend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

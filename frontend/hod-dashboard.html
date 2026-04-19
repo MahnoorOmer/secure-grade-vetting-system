@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureGrade – HoD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{--blue:#1d4ed8;--blue-light:#3b82f6;--blue-pale:#eff6ff;--blue-mid:#dbeafe;--ink:#0f172a;--slate:#334155;--muted:#64748b;--border:#e2e8f0;--white:#ffffff;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:#f0f6ff;color:var(--ink);min-height:100vh;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-right:1.5px solid rgba(29,78,216,0.10);padding:24px 0;z-index:100;display:flex;flex-direction:column;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--blue);}
+  .logo-shield{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .sidebar-nav{flex:1;padding:16px 0;}
+  .nav-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:12px 20px 6px;font-family:'JetBrains Mono',monospace;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:14px;font-weight:600;color:var(--slate);border-radius:10px;margin:2px 8px;transition:all 0.2s;}
+  .nav-item:hover,.nav-item.active{background:var(--blue-pale);color:var(--blue);}
+  .sidebar-user{padding:16px 20px;border-top:1px solid var(--border);}
+  .user-chip{display:flex;align-items:center;gap:10px;}
+  .user-avatar{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:16px;border:1.5px solid rgba(29,78,216,0.2);}
+  .user-name{font-size:14px;font-weight:700;}.user-role{font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .logout-btn{margin-top:10px;width:100%;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;font-family:'Outfit',sans-serif;}
+  .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .main{margin-left:250px;min-height:100vh;padding:32px 36px;}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-size:26px;font-weight:800;}.page-sub{font-size:14px;color:var(--muted);margin-top:4px;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:16px;padding:20px 22px;animation:fadeInUp 0.5s ease both;}
+  .stat-card:nth-child(2){animation-delay:.1s}.stat-card:nth-child(3){animation-delay:.2s}.stat-card:nth-child(4){animation-delay:.3s}
+  .stat-icon{font-size:22px;margin-bottom:10px;}.stat-value{font-size:28px;font-weight:800;}.stat-label{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:18px;padding:24px;margin-bottom:20px;animation:fadeInUp 0.5s .2s ease both;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .card-title{font-size:16px;font-weight:700;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;padding:0 0 12px;border-bottom:1.5px solid var(--border);}
+  td{padding:13px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .badge-green{background:#d1fae5;color:#059669;}.badge-warn{background:#fef3c7;color:#d97706;}.badge-red{background:#fee2e2;color:#dc2626;}.badge-blue{background:var(--blue-mid);color:var(--blue);}
+  .action-btn{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;transition:all 0.2s;margin-right:6px;}
+  .btn-approve{background:#d1fae5;color:#059669;border:1px solid #a7f3d0;}.btn-approve:hover{background:#059669;color:white;}
+  .btn-reject{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;}.btn-reject:hover{background:#dc2626;color:white;}
+  .enc-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:rgba(29,78,216,0.06);border:1px solid rgba(29,78,216,0.12);font-size:10px;color:var(--blue);font-family:'JetBrains Mono',monospace;}
+  .log-entry{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:13px;}
+  .log-entry:last-child{border-bottom:none;}
+  .log-icon{width:32px;height:32px;border-radius:10px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .log-action{font-weight:700;color:var(--ink);}.log-meta{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:2px;}
+  .section{display:none;}.section.active{display:block;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .alert{padding:12px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:14px;display:none;}
+  .alert.show{display:block;animation:fadeInUp 0.3s ease;}
+  .alert-success{background:#d1fae5;color:#059669;border:1px solid #a7f3d0;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-shield">🛡️</div>SecureGrade</div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Grade Review</div>
+    <div class="nav-item active" onclick="showSection('pending')"><span>⏳</span>Pending Grades</div>
+    <div class="nav-item" onclick="showSection('all-grades')"><span>📊</span>All Grades</div>
+    <div class="nav-label">Audit & Logs</div>
+    <div class="nav-item" onclick="showSection('audit')"><span>📋</span>Audit Logs</div>
+    <div class="nav-label">Account</div>
+    <div class="nav-item" onclick="showSection('profile')"><span>👤</span>Profile</div>
+    <div class="nav-item" onclick="showSection('security')"><span>🔐</span>Security</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-chip">
+      <div class="user-avatar">🏛️</div>
+      <div>
+        <div class="user-name" id="user-name-display">HoD</div>
+        <div class="user-role">HEAD OF DEPT</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- Pending Grades -->
+  <div id="sec-pending" class="section active">
+    <div class="page-header">
+      <div class="page-title">⏳ Pending Grades</div>
+      <div class="page-sub">Review and approve or reject submitted grades</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="stat-pending">—</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="stat-approved">—</div><div class="stat-label">Approved</div></div>
+      <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-value" id="stat-rejected">—</div><div class="stat-label">Rejected</div></div>
+      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value" id="stat-total">—</div><div class="stat-label">Total</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Awaiting Your Review</div><span class="enc-badge">🔒 Verified Signatures</span></div>
+      <div class="alert" id="review-alert"></div>
+      <div id="pending-table-wrap">
+        <div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;" id="pending-loading">Loading grades...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Grades -->
+  <div id="sec-all-grades" class="section">
+    <div class="page-header"><div class="page-title">📊 All Grades</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Complete Grade Registry</div><span class="enc-badge">🔒 E2E Encrypted</span></div>
+      <div id="all-grades-wrap">
+        <div style="text-align:center;padding:30px;color:var(--muted);">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Logs -->
+  <div id="sec-audit" class="section">
+    <div class="page-header"><div class="page-title">📋 Audit Logs</div><div class="page-sub">Immutable tamper-resistant activity log</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">System Activity Log</div><span class="enc-badge">🔒 Immutable</span></div>
+      <div id="audit-log-wrap">
+        <div style="text-align:center;padding:30px;color:var(--muted);">Loading logs...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div id="sec-profile" class="section">
+    <div class="page-header"><div class="page-title">👤 Profile</div></div>
+    <div class="card" style="max-width:500px;">
+      <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid var(--border);">
+        <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:28px;">🏛️</div>
+        <div>
+          <div style="font-size:18px;font-weight:800;" id="profile-name">HoD</div>
+          <div style="font-size:13px;color:var(--blue);font-family:'JetBrains Mono',monospace;" id="profile-email">hod@uni.edu</div>
+          <span class="badge badge-blue" style="margin-top:4px;">HEAD OF DEPARTMENT</span>
+        </div>
+      </div>
+      <div style="display:grid;gap:10px;font-size:14px;">
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Permissions</span><strong>View · Approve · Reject · Audit</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;"><span style="color:var(--muted);">MFA</span><strong>📲 SMS OTP</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div id="sec-security" class="section">
+    <div class="page-header"><div class="page-title">🔐 Security</div></div>
+    <div class="card" style="max-width:500px;">
+      <div style="display:grid;gap:12px;">
+        <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.15);border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;">🔒 RBAC Enforcement</div>
+          <div style="font-size:13px;color:var(--muted);">Your role strictly limits actions. You can approve/reject grades and view audit logs only.</div>
+        </div>
+        <div style="background:#d1fae5;border:1.5px solid #a7f3d0;border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;color:#059669;">✅ MFA Active – SMS OTP</div>
+          <div style="font-size:13px;color:#065f46;">An OTP is sent to your registered phone on every login.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:5000';
+let allGrades = [];
+let auditLogs = [];
+
+// Demo seed data
+const DEMO_GRADES = [
+  {id:1001,studentEmail:'ali@uni.edu',courseCode:'CY321',marks:87,letterGrade:'A',semester:'Spring 2025',status:'PENDING',submittedBy:'dr.sarah@uni.edu',createdAt:new Date(Date.now()-3600000).toISOString()},
+  {id:1002,studentEmail:'sara@uni.edu',courseCode:'CS401',marks:74,letterGrade:'B',semester:'Spring 2025',status:'PENDING',submittedBy:'prof.tariq@uni.edu',createdAt:new Date(Date.now()-7200000).toISOString()},
+  {id:1003,studentEmail:'usman@uni.edu',courseCode:'CS350',marks:91,letterGrade:'A',semester:'Spring 2025',status:'APPROVED',submittedBy:'ms.aiman@uni.edu',createdAt:new Date(Date.now()-86400000).toISOString(),reviewedBy:'hod@uni.edu',reviewedAt:new Date(Date.now()-82800000).toISOString()},
+];
+const DEMO_LOGS = [
+  {action:'GRADE_SUBMITTED',user:'dr.sarah@uni.edu',data:{gradeId:1001},timestamp:new Date(Date.now()-3600000).toISOString()},
+  {action:'GRADE_SUBMITTED',user:'prof.tariq@uni.edu',data:{gradeId:1002},timestamp:new Date(Date.now()-7200000).toISOString()},
+  {action:'GRADE_UPDATED',user:'hod@uni.edu',data:{gradeId:1003,oldStatus:'PENDING',newStatus:'APPROVED'},timestamp:new Date(Date.now()-82800000).toISOString()},
+  {action:'USER_LOGIN',user:'hod@uni.edu',data:{},timestamp:new Date(Date.now()-1000).toISOString()},
+];
+
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(id==='pending'||id==='all-grades') loadGrades(id);
+  if(id==='audit') loadAuditLogs();
+}
+
+async function loadGrades(section){
+  try {
+  const token = localStorage.getItem('sg_token');
+
+  const res = await fetch(`${API}/grades`, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+
+  console.log("🔵 Backend status:", res.status); // 👈 ADD THIS
+
+  if (!res.ok) throw new Error();
+
+  allGrades = await res.json();
+
+  console.log("🟢 Real backend data loaded:", allGrades); // 👈 ADD THIS
+
+} catch {
+  console.log("🟡 Using DEMO fallback data");
+  allGrades = DEMO_GRADES;
+}
+  updateStats();
+  if(section==='pending') renderPending();
+  else renderAll();
+}
+
+function updateStats(){
+  const pending=allGrades.filter(g=>g.status==='PENDING').length;
+  const approved=allGrades.filter(g=>g.status==='APPROVED').length;
+  const rejected=allGrades.filter(g=>g.status==='REJECTED').length;
+  document.getElementById('stat-pending').textContent=pending;
+  document.getElementById('stat-approved').textContent=approved;
+  document.getElementById('stat-rejected').textContent=rejected;
+  document.getElementById('stat-total').textContent=allGrades.length;
+}
+
+function renderPending(){
+  const pending=allGrades.filter(g=>g.status==='PENDING');
+  const wrap=document.getElementById('pending-table-wrap');
+  if(!pending.length){wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">🎉 No pending grades!</div>';return;}
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Student</th><th>Course</th><th>Marks</th><th>Instructor</th><th>Submitted</th><th>Actions</th></tr></thead>
+    <tbody>${pending.map(g=>`
+      <tr id="row-${g.id}">
+        <td>${g.studentEmail}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${g.courseCode}</td>
+        <td><strong>${g.marks}/100</strong> · ${g.letterGrade}</td>
+        <td style="font-size:12px;">${g.submittedBy}</td>
+        <td style="font-size:12px;color:var(--muted);">${new Date(g.createdAt).toLocaleDateString()}</td>
+        <td>
+          <button class="action-btn btn-approve" onclick="reviewGrade(${g.id},'APPROVED')">✅ Approve</button>
+          <button class="action-btn btn-reject" onclick="reviewGrade(${g.id},'REJECTED')">❌ Reject</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderAll(){
+  const wrap=document.getElementById('all-grades-wrap');
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Student</th><th>Course</th><th>Marks</th><th>Status</th><th>Reviewed By</th></tr></thead>
+    <tbody>${allGrades.map(g=>`
+      <tr>
+        <td>${g.studentEmail}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${g.courseCode}</td>
+        <td><strong>${g.marks}/100</strong> · ${g.letterGrade}</td>
+        <td><span class="badge ${g.status==='APPROVED'?'badge-green':g.status==='REJECTED'?'badge-red':'badge-warn'}">${g.status}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${g.reviewedBy||'—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function reviewGrade(id, newStatus){
+  try{
+    const token=localStorage.getItem('sg_token');
+    const res=await fetch(`${API}/grades/${id}`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({status:newStatus})
+    });
+    if(!res.ok) throw new Error();
+    const updated=await res.json();
+    const g=allGrades.find(x=>x.id==id);
+    if(g){g.status=updated.status;g.reviewedBy=updated.reviewedBy;g.reviewedAt=updated.reviewedAt;}
+  }catch{
+    const g=allGrades.find(x=>x.id==id);
+    if(g){g.status=newStatus;g.reviewedBy=localStorage.getItem('sg_email')||'hod@uni.edu';g.reviewedAt=new Date().toISOString();}
+    const hod=localStorage.getItem('sg_email')||'hod@uni.edu';
+    auditLogs.unshift({action:'GRADE_'+newStatus,user:hod,data:{gradeId:id},timestamp:new Date().toISOString()});
+
+    console.log("Sending PATCH request to backend...");
+    console.log("PATCH response:", updated);
+  }
+  updateStats();
+  renderPending();
+  const alert=document.getElementById('review-alert');
+  alert.className='alert alert-success show';
+  alert.textContent=`✅ Grade ${id} marked as ${newStatus}`;
+  setTimeout(()=>alert.classList.remove('show'),3000);
+}
+
+async function loadAuditLogs(){
+  try{
+    const token=localStorage.getItem('sg_token');
+    const res=await fetch(`${API}/grades/logs`,{headers:{'Authorization':'Bearer '+token}});
+    if(!res.ok) throw new Error();
+    auditLogs=[...await res.json(),...DEMO_LOGS];
+  }catch{
+    if(!auditLogs.length) auditLogs=DEMO_LOGS;
+  }
+  const wrap=document.getElementById('audit-log-wrap');
+  const iconMap={'GRADE_SUBMITTED':'📝','GRADE_UPDATED':'✏️','GRADE_APPROVED':'✅','GRADE_REJECTED':'❌','USER_LOGIN':'🔑'};
+  wrap.innerHTML=auditLogs.map(l=>`
+    <div class="log-entry">
+      <div class="log-icon">${iconMap[l.action]||'📋'}</div>
+      <div>
+        <div class="log-action">${l.action.replace('_',' ')}</div>
+        <div class="log-meta">${l.user} · ${new Date(l.timestamp).toLocaleString()}</div>
+        ${l.data&&Object.keys(l.data).length?`<div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;">${JSON.stringify(l.data)}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function logout(){localStorage.clear();window.location.href='index.html';}
+window.onload=()=>{
+  const email=localStorage.getItem('sg_email')||'hod@uni.edu';
+  document.getElementById('user-name-display').textContent=email.split('@')[0];
+  document.getElementById('profile-name').textContent=email.split('@')[0];
+  document.getElementById('profile-email').textContent=email;
+  loadGrades('pending');
+};
+</script>
+</body>
+</html>

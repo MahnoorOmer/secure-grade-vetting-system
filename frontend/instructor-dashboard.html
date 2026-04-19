@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureGrade – Instructor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{--blue:#1d4ed8;--blue-light:#3b82f6;--blue-pale:#eff6ff;--blue-mid:#dbeafe;--ink:#0f172a;--slate:#334155;--muted:#64748b;--border:#e2e8f0;--white:#ffffff;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:#f0f6ff;color:var(--ink);min-height:100vh;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-right:1.5px solid rgba(29,78,216,0.10);padding:24px 0;z-index:100;display:flex;flex-direction:column;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--blue);}
+  .logo-shield{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .sidebar-nav{flex:1;padding:16px 0;}
+  .nav-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:12px 20px 6px;font-family:'JetBrains Mono',monospace;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:14px;font-weight:600;color:var(--slate);border-radius:10px;margin:2px 8px;transition:all 0.2s;}
+  .nav-item:hover,.nav-item.active{background:var(--blue-pale);color:var(--blue);}
+  .sidebar-user{padding:16px 20px;border-top:1px solid var(--border);}
+  .user-chip{display:flex;align-items:center;gap:10px;}
+  .user-avatar{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:16px;border:1.5px solid rgba(29,78,216,0.2);}
+  .user-name{font-size:14px;font-weight:700;color:var(--ink);}
+  .user-role{font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .logout-btn{margin-top:10px;width:100%;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;font-family:'Outfit',sans-serif;}
+  .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .main{margin-left:250px;min-height:100vh;padding:32px 36px;}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-size:26px;font-weight:800;color:var(--ink);}
+  .page-sub{font-size:14px;color:var(--muted);margin-top:4px;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:16px;padding:20px 22px;animation:fadeInUp 0.5s ease both;}
+  .stat-card:nth-child(2){animation-delay:.1s}.stat-card:nth-child(3){animation-delay:.2s}.stat-card:nth-child(4){animation-delay:.3s}
+  .stat-icon{font-size:22px;margin-bottom:10px;}
+  .stat-value{font-size:28px;font-weight:800;color:var(--ink);}
+  .stat-label{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:18px;padding:24px;margin-bottom:20px;animation:fadeInUp 0.5s .2s ease both;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .card-title{font-size:16px;font-weight:700;color:var(--ink);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--slate);margin-bottom:6px;font-family:'JetBrains Mono',monospace;}
+  .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:rgba(255,255,255,0.8);outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue-light);box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:10px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;transition:all 0.2s;}
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;box-shadow:0 4px 14px rgba(29,78,216,0.3);}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(29,78,216,0.4);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;padding:0 0 12px;border-bottom:1.5px solid var(--border);}
+  td{padding:13px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .badge-green{background:#d1fae5;color:#059669;}
+  .badge-warn{background:#fef3c7;color:#d97706;}
+  .badge-blue{background:var(--blue-mid);color:var(--blue);}
+  .enc-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:rgba(29,78,216,0.06);border:1px solid rgba(29,78,216,0.12);font-size:10px;color:var(--blue);font-family:'JetBrains Mono',monospace;}
+  .alert{padding:12px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:14px;display:none;}
+  .alert.show{display:block;animation:fadeInUp 0.3s ease;}
+  .alert-error{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;}
+  .alert-success{background:#d1fae5;color:#059669;border:1px solid #a7f3d0;}
+  .section{display:none;}.section.active{display:block;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-shield">🛡️</div>SecureGrade</div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Grade Management</div>
+    <div class="nav-item active" onclick="showSection('submit')"><span>📝</span>Submit Grade</div>
+    <div class="nav-item" onclick="showSection('submitted')"><span>📋</span>My Submissions</div>
+    <div class="nav-label">Account</div>
+    <div class="nav-item" onclick="showSection('profile')"><span>👤</span>Profile</div>
+    <div class="nav-item" onclick="showSection('security')"><span>🔐</span>Security</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-chip">
+      <div class="user-avatar">👩‍🏫</div>
+      <div>
+        <div class="user-name" id="user-name-display">Instructor</div>
+        <div class="user-role">INSTRUCTOR ACCESS</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- Submit Grade -->
+  <div id="sec-submit" class="section active">
+    <div class="page-header">
+      <div class="page-title">📝 Submit Grade</div>
+      <div class="page-sub">Grades are digitally signed and encrypted before submission</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-value" id="stat-courses">3</div><div class="stat-label">Courses</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="stat-submitted">0</div><div class="stat-label">Submitted</div></div>
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-icon">✔️</div><div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">New Grade Submission</div>
+        <span class="enc-badge">🔒 Encrypted & Signed</span>
+      </div>
+      <div class="alert" id="submit-alert"></div>
+      <div class="field-row">
+        <div class="field"><label>Student Email</label><input type="email" id="g-student" placeholder="student@uni.edu"/></div>
+        <div class="field"><label>Course Code</label>
+          <select id="g-course">
+            <option value="">Select Course</option>
+            <option value="CY321">CY321 – Secure Software Dev</option>
+            <option value="CS401">CS401 – Algorithms</option>
+            <option value="CS350">CS350 – Database Systems</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row-3">
+        <div class="field"><label>Marks (0-100)</label><input type="number" id="g-marks" placeholder="e.g. 87" min="0" max="100"/></div>
+        <div class="field"><label>Letter Grade</label>
+          <select id="g-letter">
+            <option value="A">A (85-100)</option>
+            <option value="B">B (70-84)</option>
+            <option value="C">C (55-69)</option>
+            <option value="D">D (40-54)</option>
+            <option value="F">F (Below 40)</option>
+          </select>
+        </div>
+        <div class="field"><label>Semester</label>
+          <select id="g-semester">
+            <option>Spring 2025</option>
+            <option>Fall 2024</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Remarks (optional)</label><textarea id="g-remarks" rows="2" placeholder="Any note for the HoD..."></textarea></div>
+
+      <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.12);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);display:flex;align-items:center;gap:8px;">
+        🔐 This submission will be digitally signed with your Instructor credentials and encrypted before storage.
+      </div>
+
+      <button class="btn btn-primary" id="submit-btn" onclick="submitGrade()">📤 Submit Grade</button>
+    </div>
+  </div>
+
+  <!-- My Submissions -->
+  <div id="sec-submitted" class="section">
+    <div class="page-header"><div class="page-title">📋 My Submissions</div><div class="page-sub">All grades you've submitted this semester</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Submitted Grades</div><span class="enc-badge">🔒 E2E Encrypted</span></div>
+      <table>
+        <thead><tr><th>Student</th><th>Course</th><th>Grade</th><th>Submitted At</th><th>Status</th></tr></thead>
+        <tbody id="submissions-table-body">
+          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;font-size:14px;">No submissions yet. Submit a grade to see it here.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div id="sec-profile" class="section">
+    <div class="page-header"><div class="page-title">👤 Profile</div></div>
+    <div class="card" style="max-width:500px;">
+      <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid var(--border);">
+        <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:28px;">👩‍🏫</div>
+        <div>
+          <div style="font-size:18px;font-weight:800;" id="profile-name">Instructor</div>
+          <div style="font-size:13px;color:var(--blue);font-family:'JetBrains Mono',monospace;" id="profile-email">instructor@uni.edu</div>
+          <span class="badge badge-blue" style="margin-top:4px;">INSTRUCTOR</span>
+        </div>
+      </div>
+      <div style="display:grid;gap:10px;font-size:14px;">
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Department</span><strong>Computer Science</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Courses</span><strong>CY321, CS401, CS350</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;"><span style="color:var(--muted);">MFA</span><strong>📱 TOTP (Authenticator App)</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div id="sec-security" class="section">
+    <div class="page-header"><div class="page-title">🔐 Security</div></div>
+    <div class="card" style="max-width:500px;">
+      <div style="display:grid;gap:12px;">
+        <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.15);border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;">🔒 Digital Signature</div>
+          <div style="font-size:13px;color:var(--muted);">All grade submissions are digitally signed with your credentials to ensure non-repudiation.</div>
+        </div>
+        <div style="background:#d1fae5;border:1.5px solid #a7f3d0;border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;color:#059669;">✅ MFA Active – TOTP Authenticator</div>
+          <div style="font-size:13px;color:#065f46;">Protected with time-based one-time passwords via your authenticator app.</div>
+        </div>
+        <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;">🔑 JWT Auth</div>
+          <div style="font-size:13px;color:var(--muted);">Your token is signed and expires in 1 hour for maximum security.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:5000';
+let submissions = [];
+
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(id==='submitted') renderSubmissions();
+}
+
+async function submitGrade(){
+  const student = document.getElementById('g-student').value.trim();
+  const course = document.getElementById('g-course').value;
+  const marks = document.getElementById('g-marks').value;
+  const letter = document.getElementById('g-letter').value;
+  const semester = document.getElementById('g-semester').value;
+  const remarks = document.getElementById('g-remarks').value;
+
+  if(!student||!course||!marks){
+    showAlert('submit-alert','error','⚠️ Please fill Student, Course and Marks.');
+    return;
+  }
+
+  const btn=document.getElementById('submit-btn');
+  btn.innerHTML='<div class="spinner"></div> Submitting...';
+  btn.disabled=true;
+
+  const gradeData = {studentEmail:student,courseCode:course,marks:parseInt(marks),letterGrade:letter,semester,remarks};
+
+  try{
+    const token = localStorage.getItem('sg_token');
+    const res = await fetch(`${API}/grades`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify(gradeData)
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed');
+    addSubmission({...gradeData,id:data.id,status:'PENDING',createdAt:new Date().toISOString()});
+    showAlert('submit-alert','success','✅ Grade submitted and encrypted successfully!');
+    clearForm();
+  }catch(e){
+    // Demo mode
+    addSubmission({...gradeData,id:Date.now(),status:'PENDING',createdAt:new Date().toISOString()});
+    showAlert('submit-alert','success','✅ Grade submitted successfully! (Demo mode)');
+    clearForm();
+  }finally{
+    btn.innerHTML='📤 Submit Grade';
+    btn.disabled=false;
+  }
+}
+
+function addSubmission(g){
+  submissions.unshift(g);
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById('stat-submitted').textContent=submissions.length;
+  document.getElementById('stat-pending').textContent=submissions.filter(s=>s.status==='PENDING').length;
+  document.getElementById('stat-approved').textContent=submissions.filter(s=>s.status==='APPROVED').length;
+}
+
+function renderSubmissions(){
+  const tbody=document.getElementById('submissions-table-body');
+  if(!submissions.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No submissions yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=submissions.map(s=>`
+    <tr>
+      <td>${s.studentEmail}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${s.courseCode}</td>
+      <td><strong>${s.marks}/100</strong> · ${s.letterGrade}</td>
+      <td style="font-size:12px;color:var(--muted);">${new Date(s.createdAt).toLocaleString()}</td>
+      <td><span class="badge ${s.status==='APPROVED'?'badge-green':'badge-warn'}">${s.status==='APPROVED'?'✅ Approved':'⏳ Pending'}</span></td>
+    </tr>`).join('');
+}
+
+function clearForm(){
+  ['g-student','g-marks','g-remarks'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('g-course').value='';
+}
+
+function showAlert(id,type,msg){
+  const el=document.getElementById(id);
+  el.className=`alert alert-${type} show`;
+  el.textContent=msg;
+  setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+function logout(){localStorage.clear();window.location.href='index.html';}
+window.onload=()=>{
+  const email=localStorage.getItem('sg_email')||'instructor@uni.edu';
+  document.getElementById('user-name-display').textContent=email.split('@')[0];
+  document.getElementById('profile-name').textContent=email.split('@')[0];
+  document.getElementById('profile-email').textContent=email;
+};
+</script>
+</body>
+</html>

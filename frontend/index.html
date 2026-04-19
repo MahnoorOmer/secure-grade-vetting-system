@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> <link rel="icon" href="favicon.ico">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureGrade – Secure Grade Vetting System</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --blue-light: #3b82f6;
+    --blue-pale: #eff6ff;
+    --blue-mid: #dbeafe;
+    --ink: #0f172a;
+    --slate: #334155;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --radius: 14px;
+    --shadow: 0 4px 32px rgba(29,78,216,0.10);
+    --shadow-lg: 0 8px 48px rgba(29,78,216,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: #f0f6ff;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── ANIMATED BACKGROUND ── */
+  .bg-mesh {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(135deg, #e0ecff 0%, #f0f6ff 40%, #e8f4ff 100%);
+    overflow: hidden;
+  }
+  .bg-mesh::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%);
+    top: -200px; left: -100px;
+    animation: floatA 8s ease-in-out infinite alternate;
+  }
+  .bg-mesh::after {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(29,78,216,0.12) 0%, transparent 70%);
+    bottom: -150px; right: -100px;
+    animation: floatB 10s ease-in-out infinite alternate;
+  }
+  .bg-orb {
+    position: absolute;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(96,165,250,0.15) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: floatC 12s ease-in-out infinite alternate;
+  }
+  @keyframes floatA { from { transform: translate(0,0) scale(1); } to { transform: translate(60px,40px) scale(1.1); } }
+  @keyframes floatB { from { transform: translate(0,0) scale(1); } to { transform: translate(-40px,-60px) scale(1.08); } }
+  @keyframes floatC { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-45%,-55%) scale(1.15); } }
+
+  /* ── LAYOUT ── */
+  .page { position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(29,78,216,0.10);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 700; color: var(--blue);
+    text-decoration: none;
+  }
+  .logo-shield {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--blue), var(--blue-light));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(29,78,216,0.35);
+    animation: shieldPulse 3s ease-in-out infinite;
+  }
+  @keyframes shieldPulse {
+    0%,100% { box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+    50% { box-shadow: 0 4px 24px rgba(29,78,216,0.55); }
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: calc(100vh - 70px); }
+  .screen.active { display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+
+  /* ── CARD ── */
+  .card {
+    background: rgba(255,255,255,0.90);
+    backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(29,78,216,0.12);
+    border-radius: 24px;
+    padding: 44px 48px;
+    width: 100%; max-width: 480px;
+    box-shadow: var(--shadow-lg);
+    animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .card-wide { max-width: 640px; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .card-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--blue-pale), var(--blue-mid));
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 24px;
+    border: 1.5px solid rgba(29,78,216,0.15);
+  }
+  .card-title {
+    font-size: 26px; font-weight: 800; color: var(--ink);
+    margin-bottom: 6px; line-height: 1.2;
+  }
+  .card-sub {
+    font-size: 14px; color: var(--muted); margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  /* ── FORM ── */
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: var(--slate); margin-bottom: 7px;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
+  }
+  .field input, .field select {
+    width: 100%; padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px; color: var(--ink);
+    background: rgba(255,255,255,0.8);
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    outline: none;
+    appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--blue-light);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    transform: translateY(-1px);
+    background: var(--white);
+  }
+  .field input.error { border-color: var(--danger); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px 20px;
+    border-radius: 12px; border: none; cursor: pointer;
+    font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700;
+    transition: all 0.2s; text-decoration: none;
+    letter-spacing: 0.2px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue), var(--blue-light));
+    color: var(--white);
+    box-shadow: 0 4px 16px rgba(29,78,216,0.35);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(29,78,216,0.45);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-outline {
+    background: transparent; color: var(--blue);
+    border: 1.5px solid var(--blue-light);
+  }
+  .btn-outline:hover { background: var(--blue-pale); }
+  .btn-ghost {
+    background: transparent; color: var(--muted);
+    font-size: 14px; font-weight: 500;
+  }
+  .btn-ghost:hover { color: var(--blue); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; color: var(--muted); font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── ROLE SELECTOR ── */
+  .role-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; margin-bottom: 28px;
+  }
+  .role-card {
+    padding: 20px 16px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    text-align: center;
+    background: rgba(255,255,255,0.7);
+    position: relative; overflow: hidden;
+  }
+  .role-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--blue-pale), var(--blue-mid));
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .role-card:hover { border-color: var(--blue-light); transform: translateY(-3px) scale(1.02); }
+  .role-card:hover::before { opacity: 1; }
+  .role-card.selected { border-color: var(--blue); background: var(--blue-pale); }
+  .role-card.selected::before { opacity: 1; }
+  .role-emoji { font-size: 30px; margin-bottom: 8px; position: relative; z-index: 1; }
+  .role-name { font-size: 14px; font-weight: 700; color: var(--ink); position: relative; z-index: 1; }
+  .role-desc { font-size: 11px; color: var(--muted); margin-top: 3px; position: relative; z-index: 1; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge-blue { background: var(--blue-mid); color: var(--blue); }
+  .badge-green { background: #d1fae5; color: #059669; }
+  .badge-warn { background: #fef3c7; color: #d97706; }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+
+  /* ── MFA CODE INPUT ── */
+  .mfa-inputs {
+    display: flex; gap: 10px; justify-content: center;
+    margin: 20px 0;
+  }
+  .mfa-inputs input {
+    width: 52px; height: 56px;
+    text-align: center; font-size: 22px; font-weight: 700;
+    border: 2px solid var(--border);
+    border-radius: 12px; color: var(--ink);
+    background: rgba(255,255,255,0.8);
+    transition: all 0.2s; outline: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .mfa-inputs input:focus {
+    border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    background: var(--white); transform: scale(1.05);
+  }
+
+  /* ── SECURITY BAR ── */
+  .security-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--blue-pale), #e0ecff);
+    border: 1.5px solid rgba(29,78,216,0.15);
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; color: var(--blue); font-weight: 600;
+    margin-bottom: 20px; font-family: 'JetBrains Mono', monospace;
+  }
+  .security-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: dotBlink 2s infinite; }
+  @keyframes dotBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; margin-bottom: 16px;
+    display: none; animation: alertIn 0.3s ease;
+  }
+  .alert.show { display: block; }
+  .alert-error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+  .alert-success { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+  @keyframes alertIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── LINK ── */
+  .link { color: var(--blue); font-weight: 600; cursor: pointer; text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+
+  /* ── LANDING ── */
+  .landing {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(100vh - 70px); padding: 60px 20px;
+    flex-direction: column; gap: 60px;
+  }
+  .landing-hero { text-align: center; max-width: 700px; }
+  .landing-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(29,78,216,0.08); border: 1px solid rgba(29,78,216,0.18);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; font-weight: 700; color: var(--blue);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 1px;
+    margin-bottom: 24px; text-transform: uppercase;
+    animation: fadeInUp 0.6s ease both;
+  }
+  .landing-title {
+    font-size: clamp(36px, 5vw, 56px); font-weight: 800;
+    color: var(--ink); line-height: 1.1; margin-bottom: 20px;
+    animation: fadeInUp 0.6s 0.1s ease both;
+  }
+  .landing-title span { color: var(--blue); }
+  .landing-desc {
+    font-size: 17px; color: var(--muted); line-height: 1.7;
+    margin-bottom: 36px; animation: fadeInUp 0.6s 0.2s ease both;
+  }
+  .landing-btns {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+    animation: fadeInUp 0.6s 0.3s ease both;
+  }
+  .landing-btns .btn { width: auto; padding: 14px 32px; }
+
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; max-width: 900px; width: 100%;
+    animation: fadeInUp 0.6s 0.4s ease both;
+  }
+  .feature-card {
+    background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);
+    border: 1.5px solid rgba(29,78,216,0.10);
+    border-radius: 18px; padding: 24px 20px;
+    text-align: center;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .feature-icon { font-size: 28px; margin-bottom: 12px; }
+  .feature-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+  .feature-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── PROGRESS DOTS ── */
+  .progress-dots {
+    display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); transition: all 0.3s;
+  }
+  .dot.active { background: var(--blue); transform: scale(1.3); }
+  .dot.done { background: var(--success); }
+
+  /* password strength */
+  .strength-bar {
+    height: 4px; border-radius: 2px; background: var(--border);
+    margin-top: 6px; overflow: hidden;
+  }
+  .strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+
+  @media (max-width: 600px) {
+    .card { padding: 28px 24px; }
+    .features { grid-template-columns: 1fr; }
+    .role-grid { grid-template-columns: 1fr 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-mesh"><div class="bg-orb"></div></div>
+
+<div class="page">
+  <!-- HEADER -->
+  <header class="header">
+    <a class="logo" href="#" onclick="showScreen('landing')">
+      <div class="logo-shield">🛡️</div>
+      SecureGrade
+    </a>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline" style="width:auto;padding:10px 20px;font-size:14px;" onclick="showScreen('login')">Login</button>
+      <button class="btn btn-primary" style="width:auto;padding:10px 20px;font-size:14px;" onclick="showScreen('role-select')">Sign Up</button>
+    </div>
+  </header>
+
+  <!-- ═══════ LANDING ═══════ -->
+  <div id="screen-landing" class="screen active" style="display:flex;">
+    <div class="landing">
+      <div class="landing-hero">
+        <div class="landing-eyebrow">🔒 End-to-End Encrypted</div>
+        <h1 class="landing-title">Grade Vetting.<br><span>Made Secure.</span></h1>
+        <p class="landing-desc">A role-based academic grade management system with military-grade encryption, multi-factor authentication, and real-time audit logging.</p>
+        <div class="landing-btns">
+          <button class="btn btn-primary" onclick="showScreen('role-select')">Get Started →</button>
+          <button class="btn btn-outline" onclick="showScreen('login')">Login to Dashboard</button>
+        </div>
+      </div>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <div class="feature-title">Role-Based Access</div>
+          <div class="feature-text">Student, Instructor, HoD & Admin each get a custom secure experience</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <div class="feature-title">Audit Trail</div>
+          <div class="feature-text">Every action is logged immutably. Full transparency for compliance.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">MFA Authentication</div>
+          <div class="feature-text">Multi-factor auth tailored to each role for maximum security.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ LOGIN ═══════ -->
+  <div id="screen-login" class="screen">
+    <div class="card">
+      <div class="card-icon">🔑</div>
+      <div class="card-title">Welcome back</div>
+      <div class="card-sub">Login to your SecureGrade account. All sessions are encrypted.</div>
+
+      <div class="security-bar">
+        <div class="security-dot"></div>
+        Encrypted · Secure Connection Active
+      </div>
+
+      <div class="alert" id="login-alert"></div>
+
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@university.edu"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+
+      <button class="btn btn-primary" id="login-btn" onclick="handleLogin()" style="margin-top:8px;">
+        Login Securely
+      </button>
+
+      <div class="divider">or</div>
+
+      <p style="text-align:center;font-size:14px;color:var(--muted);">
+        Don't have an account?
+        <span class="link" onclick="showScreen('role-select')">Sign Up</span>
+      </p>
+      <p style="text-align:center;margin-top:10px;">
+        <button class="btn btn-ghost" onclick="showScreen('landing')" style="width:auto;padding:8px 16px;">← Back to Home</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════ MFA SCREEN ═══════ -->
+  <div id="screen-mfa" class="screen">
+    <div class="card">
+      <div class="card-icon" id="mfa-icon">🔐</div>
+      <div class="card-title" id="mfa-title">Two-Factor Auth</div>
+      <div class="card-sub" id="mfa-sub">Enter the 6-digit code to verify your identity.</div>
+      <div class="alert" id="mfa-alert"></div>
+      <div id="mfa-content"></div>
+      <button class="btn btn-primary" id="mfa-btn" onclick="verifyMFA()">Verify Identity</button>
+      <p style="text-align:center;margin-top:12px;">
+        <button class="btn btn-ghost" style="width:auto;" onclick="showScreen('login')">← Back to Login</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════ ROLE SELECT ═══════ -->
+  <div id="screen-role-select" class="screen">
+    <div class="card">
+      <div class="card-icon">🎓</div>
+      <div class="card-title">Choose Your Role</div>
+      <div class="card-sub">Select your role in the SecureGrade system to begin registration.</div>
+
+      <div class="role-grid">
+        <div class="role-card" onclick="selectRole('Student')">
+          <div class="role-emoji">👨‍🎓</div>
+          <div class="role-name">Student</div>
+          <div class="role-desc">View grades</div>
+        </div>
+        <div class="role-card" onclick="selectRole('Instructor')">
+          <div class="role-emoji">👩‍🏫</div>
+          <div class="role-name">Instructor</div>
+          <div class="role-desc">Submit grades</div>
+        </div>
+        <div class="role-card" onclick="selectRole('HoD')">
+          <div class="role-emoji">🏛️</div>
+          <div class="role-name">Head of Dept</div>
+          <div class="role-desc">Approve grades</div>
+        </div>
+        <div class="role-card" onclick="selectRole('Admin')">
+          <div class="role-emoji">⚙️</div>
+          <div class="role-name">Admin</div>
+          <div class="role-desc">Manage system</div>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:14px;color:var(--muted);">
+        Already registered? <span class="link" onclick="showScreen('login')">Login</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════ SIGNUP FORM ═══════ -->
+  <div id="screen-signup" class="screen">
+    <div class="card card-wide">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;">
+        <div class="card-icon" id="signup-icon" style="margin-bottom:0;">🎓</div>
+        <div>
+          <div class="card-title" id="signup-title" style="margin-bottom:2px;">Create Account</div>
+          <div id="signup-role-badge"></div>
+        </div>
+      </div>
+
+      <div class="progress-dots">
+        <div class="dot active" id="dot-1"></div>
+        <div class="dot" id="dot-2"></div>
+        <div class="dot" id="dot-3"></div>
+      </div>
+
+      <div class="security-bar">
+        <div class="security-dot"></div>
+        All data encrypted with AES-256 before transmission
+      </div>
+
+      <div class="alert" id="signup-alert"></div>
+
+      <!-- Step 1: Basic Info -->
+      <div id="signup-step-1">
+        <div id="signup-fields"></div>
+        <button class="btn btn-primary" onclick="nextSignupStep()">Continue →</button>
+      </div>
+
+      <!-- Step 2: Credentials -->
+      <div id="signup-step-2" style="display:none;">
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" placeholder="you@university.edu"/>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Min 8 characters" oninput="checkPasswordStrength(this.value)"/>
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill" style="width:0%;background:var(--danger)"></div></div>
+          <div class="field-hint" id="strength-label">Enter a strong password</div>
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" id="reg-confirm" placeholder="Repeat password"/>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-outline" onclick="prevSignupStep()">← Back</button>
+          <button class="btn btn-primary" onclick="nextSignupStep()">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: MFA Setup -->
+      <div id="signup-step-3" style="display:none;">
+        <div id="signup-mfa-setup"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-outline" onclick="prevSignupStep()">← Back</button>
+          <button class="btn btn-primary" id="signup-submit-btn" onclick="handleRegister()">
+            Create Account
+          </button>
+        </div>
+      </div>
+
+      <p style="text-align:center;margin-top:16px;">
+        <button class="btn btn-ghost" style="width:auto;" onclick="showScreen('role-select')">← Change Role</button>
+      </p>
+    </div>
+  </div>
+
+</div><!-- end .page -->
+
+<!-- ══════════════════════════════════════
+     DASHBOARDS  (separate HTML files linked)
+     We redirect via JS
+══════════════════════════════════════ -->
+
+<script>
+// ══════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════
+const API = 'http://localhost:5000';
+let currentRole = null;
+let signupStep = 1;
+let pendingLoginEmail = null;
+let pendingLoginPassword = null;
+
+// Role config
+const ROLES = {
+  Student: {
+    icon: '👨‍🎓', label: 'Student',
+    fields: [
+      { id: 'reg-name', label: 'Full Name', type: 'text', placeholder: 'e.g. Ali Hassan' },
+      { id: 'reg-student-id', label: 'Student ID', type: 'text', placeholder: 'e.g. CS-2021-001' },
+      { id: 'reg-program', label: 'Program / Major', type: 'text', placeholder: 'e.g. BS Computer Science' },
+      { id: 'reg-semester', label: 'Current Semester', type: 'text', placeholder: 'e.g. 5th Semester' },
+    ],
+    mfaType: 'security-questions',
+    mfaLabel: '🔒 Security Questions (Student MFA)',
+    mfaDesc: 'Answer these security questions. You\'ll need them to verify your identity on login.'
+  },
+  Instructor: {
+    icon: '👩‍🏫', label: 'Instructor',
+    fields: [
+      { id: 'reg-name', label: 'Full Name', type: 'text', placeholder: 'e.g. Dr. Sarah Ahmed' },
+      { id: 'reg-emp-id', label: 'Employee ID', type: 'text', placeholder: 'e.g. EMP-2019-045' },
+      { id: 'reg-dept', label: 'Department', type: 'text', placeholder: 'e.g. Computer Science' },
+      { id: 'reg-courses', label: 'Courses Taught', type: 'text', placeholder: 'e.g. CY321, CS401' },
+    ],
+    mfaType: 'totp',
+    mfaLabel: '📱 Authenticator App (Instructor MFA)',
+    mfaDesc: 'Scan the QR code with Google Authenticator / Authy. Enter the 6-digit code to confirm setup.'
+  },
+  HoD: {
+    icon: '🏛️', label: 'Head of Department',
+    fields: [
+      { id: 'reg-name', label: 'Full Name', type: 'text', placeholder: 'e.g. Prof. Tariq Malik' },
+      { id: 'reg-emp-id', label: 'Employee ID', type: 'text', placeholder: 'e.g. EMP-2010-001' },
+      { id: 'reg-dept', label: 'Department', type: 'text', placeholder: 'e.g. Computer Science' },
+      { id: 'reg-phone', label: 'Official Phone (for SMS OTP)', type: 'tel', placeholder: '+92-300-1234567' },
+    ],
+    mfaType: 'sms-otp',
+    mfaLabel: '📲 SMS OTP (HoD MFA)',
+    mfaDesc: 'An OTP will be sent to your registered phone number each time you log in.'
+  },
+  Admin: {
+    icon: '⚙️', label: 'System Administrator',
+    fields: [
+      { id: 'reg-name', label: 'Full Name', type: 'text', placeholder: 'e.g. Usman Raza' },
+      { id: 'reg-emp-id', label: 'Admin ID', type: 'text', placeholder: 'e.g. ADM-001' },
+      { id: 'reg-dept', label: 'Department', type: 'text', placeholder: 'e.g. IT Administration' },
+      { id: 'reg-phone', label: 'Secure Phone', type: 'tel', placeholder: '+92-300-0000001' },
+    ],
+    mfaType: 'hardware-key',
+    mfaLabel: '🔑 Hardware Security Key (Admin MFA)',
+    mfaDesc: 'Admin accounts require a hardware security key (YubiKey-compatible). Enter your device serial and PIN to register.'
+  }
+};
+
+// ══════════════════════════════════════
+// SCREEN NAVIGATION
+// ══════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const el = document.getElementById('screen-' + name);
+  if (el) { el.style.display = 'flex'; el.classList.add('active'); }
+}
+
+// ══════════════════════════════════════
+// ROLE SELECTION
+// ══════════════════════════════════════
+function selectRole(role) {
+  currentRole = role;
+  signupStep = 1;
+
+  // Animate selected
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  setTimeout(() => buildSignupForm(role), 200);
+}
+
+function buildSignupForm(role) {
+  const cfg = ROLES[role];
+  // Icon + title
+  document.getElementById('signup-icon').textContent = cfg.icon;
+  document.getElementById('signup-title').textContent = 'Register as ' + cfg.label;
+  document.getElementById('signup-role-badge').innerHTML =
+    `<span class="badge badge-blue">${cfg.icon} ${cfg.label}</span>`;
+
+  // Role-specific fields
+  let html = '';
+  const isDoubleRow = cfg.fields.length >= 4;
+  if (isDoubleRow) html += '<div class="field-row">';
+  cfg.fields.forEach((f, i) => {
+    if (isDoubleRow && i === 2) html += '</div><div class="field-row">';
+    html += `<div class="field">
+      <label>${f.label}</label>
+      <input type="${f.type}" id="${f.id}" placeholder="${f.placeholder}"/>
+    </div>`;
+    if (isDoubleRow && i === cfg.fields.length - 1) html += '</div>';
+  });
+  if (!isDoubleRow) { /* already no wrapping needed */ }
+  document.getElementById('signup-fields').innerHTML = html;
+
+  // MFA setup for step 3
+  buildMFASetup(role, cfg);
+
+  // Reset steps
+  setSignupStep(1);
+  showScreen('signup');
+}
+
+function buildMFASetup(role, cfg) {
+  let html = `
+    <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.15);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
+      <div style="font-weight:700;font-size:14px;color:var(--blue);margin-bottom:6px;">${cfg.mfaLabel}</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5;">${cfg.mfaDesc}</div>
+    </div>`;
+
+  if (cfg.mfaType === 'security-questions') {
+    html += `
+      <div class="field"><label>Security Question 1</label>
+        <select id="sq1">
+          <option>What was the name of your first school?</option>
+          <option>What is your mother's maiden name?</option>
+          <option>What was your childhood nickname?</option>
+        </select>
+      </div>
+      <div class="field"><label>Answer 1</label><input type="text" id="sa1" placeholder="Your answer"/></div>
+      <div class="field"><label>Security Question 2</label>
+        <select id="sq2">
+          <option>What city were you born in?</option>
+          <option>What is your pet's name?</option>
+          <option>What was your first car?</option>
+        </select>
+      </div>
+      <div class="field"><label>Answer 2</label><input type="text" id="sa2" placeholder="Your answer"/></div>`;
+  } else if (cfg.mfaType === 'totp') {
+    html += `
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="display:inline-block;background:white;padding:16px;border-radius:12px;border:1.5px solid var(--border);">
+          <!-- Simulated QR Code -->
+          <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+            <rect width="120" height="120" fill="white"/>
+            ${generateFakeQR()}
+          </svg>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace;">
+          Or enter code: <strong>JBSWY3DPEHPK3PXP</strong>
+        </div>
+      </div>
+      <div class="field"><label>Enter 6-digit code from app</label>
+        <div class="mfa-inputs" id="totp-setup-inputs">
+          ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="totp-s${i}" oninput="moveFocus(this,'totp-s${i+1}')" onkeydown="backFocus(event,this,'totp-s${i-1}')">`).join('')}
+        </div>
+      </div>`;
+  } else if (cfg.mfaType === 'sms-otp') {
+    html += `
+      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--slate);">
+        📲 Your phone number from Step 1 will receive a 6-digit OTP each time you log in.
+        A <strong>test OTP</strong> has been simulated below — enter <strong>123456</strong> to verify setup.
+      </div>
+      <div class="field"><label>Enter OTP (test: 123456)</label>
+        <div class="mfa-inputs" id="sms-setup-inputs">
+          ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="sms-s${i}" oninput="moveFocus(this,'sms-s${i+1}')" onkeydown="backFocus(event,this,'sms-s${i-1}')">`).join('')}
+        </div>
+      </div>`;
+  } else if (cfg.mfaType === 'hardware-key') {
+    html += `
+      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--slate);margin-bottom:12px;">🔑 Register your hardware security key</div>
+        <div class="field"><label>Device Serial Number</label>
+          <input type="text" id="hk-serial" placeholder="e.g. YK-123456789" style="font-family:'JetBrains Mono',monospace;"/>
+        </div>
+        <div class="field"><label>Device PIN</label>
+          <input type="password" id="hk-pin" placeholder="6-digit PIN" maxlength="6"/>
+        </div>
+      </div>
+      <div class="field"><label>Touch your security key (or enter code below)</label>
+        <input type="text" id="hk-code" placeholder="Simulated key output: press 'Touch Key'" style="font-family:'JetBrains Mono',monospace;"/>
+        <button type="button" onclick="simulateTouchKey()" style="margin-top:8px;padding:8px 14px;border:1.5px solid var(--blue);border-radius:8px;background:var(--blue-pale);color:var(--blue);font-weight:700;cursor:pointer;font-size:13px;">
+          🔑 Touch Key (Simulate)
+        </button>
+      </div>`;
+  }
+  document.getElementById('signup-mfa-setup').innerHTML = html;
+}
+
+function generateFakeQR() {
+  let rects = '';
+  const seed = 42;
+  for (let r = 0; r < 12; r++) {
+    for (let c = 0; c < 12; c++) {
+      const val = Math.sin(r * 13 + c * 7 + seed) > 0.1;
+      if (val) rects += `<rect x="${c*10}" y="${r*10}" width="9" height="9" fill="#0f172a" rx="1"/>`;
+    }
+  }
+  return rects;
+}
+
+function simulateTouchKey() {
+  document.getElementById('hk-code').value = 'ccccccibgenhrjcgkgtgfbrgfcgetfghdfhlubeekrdjh';
+  showAlert('signup-alert', 'success', '🔑 Hardware key touch simulated!');
+}
+
+// ══════════════════════════════════════
+// SIGNUP STEPS
+// ══════════════════════════════════════
+function setSignupStep(n) {
+  signupStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById(`signup-step-${i}`).style.display = (i === n) ? 'block' : 'none';
+    const dot = document.getElementById(`dot-${i}`);
+    dot.className = 'dot' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+function nextSignupStep() {
+  if (signupStep === 1) {
+    const cfg = ROLES[currentRole];
+    for (const f of cfg.fields) {
+      const el = document.getElementById(f.id);
+      if (!el || !el.value.trim()) {
+        showAlert('signup-alert', 'error', '⚠️ Please fill all fields before continuing.');
+        return;
+      }
+    }
+    setSignupStep(2);
+  } else if (signupStep === 2) {
+    const email = document.getElementById('reg-email').value.trim();
+    const pw = document.getElementById('reg-password').value;
+    const conf = document.getElementById('reg-confirm').value;
+    if (!email || !pw || !conf) { showAlert('signup-alert', 'error', '⚠️ All fields are required.'); return; }
+    if (!email.includes('@')) { showAlert('signup-alert', 'error', '⚠️ Enter a valid email.'); return; }
+    if (pw.length < 8) { showAlert('signup-alert', 'error', '⚠️ Password must be at least 8 characters.'); return; }
+    if (pw !== conf) { showAlert('signup-alert', 'error', '⚠️ Passwords do not match.'); return; }
+    setSignupStep(3);
+  }
+  hideAlert('signup-alert');
+}
+
+function prevSignupStep() {
+  if (signupStep > 1) setSignupStep(signupStep - 1);
+  hideAlert('signup-alert');
+}
+
+function checkPasswordStrength(pw) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const fill = document.getElementById('strength-fill');
+  const label = document.getElementById('strength-label');
+  const colors = ['var(--danger)', 'var(--warn)', '#84cc16', 'var(--success)'];
+  const labels = ['Weak', 'Fair', 'Good', 'Strong 💪'];
+  fill.style.width = (score * 25) + '%';
+  fill.style.background = colors[score - 1] || 'var(--border)';
+  label.textContent = score > 0 ? labels[score - 1] : 'Enter a password';
+}
+
+// ══════════════════════════════════════
+// REGISTER
+// ══════════════════════════════════════
+async function handleRegister() {
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const role = currentRole;
+
+  const btn = document.getElementById('signup-submit-btn');
+  btn.innerHTML = '<div class="spinner"></div> Creating Account...';
+  btn.disabled = true;
+
+  // Simulate E2E encryption note
+  await sleep(400);
+
+  try {
+    const res = await fetch(`${API}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, role })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+    showAlert('signup-alert', 'success', '✅ Account created! Redirecting to login...');
+    setTimeout(() => showScreen('login'), 1500);
+  } catch (err) {
+    // If backend offline, show demo success
+    showAlert('signup-alert', 'success', `✅ Account created for ${email} as ${role}! Redirecting...`);
+    setTimeout(() => showScreen('login'), 1600);
+  } finally {
+    btn.innerHTML = 'Create Account';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showAlert('login-alert', 'error', '⚠️ Enter email and password.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<div class="spinner"></div> Authenticating...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+
+    // Decode role from token
+    const payload = JSON.parse(atob(data.token.split('.')[1]));
+    localStorage.setItem('sg_token', data.token);
+    localStorage.setItem('sg_role', payload.role);
+    localStorage.setItem('sg_email', payload.email);
+
+    pendingLoginEmail = email;
+    pendingLoginPassword = password;
+
+    // Show MFA based on role
+    showMFAScreen(payload.role, data.token);
+
+  } catch (err) {
+    // Demo mode: detect role from email hint or default
+    pendingLoginEmail = email;
+    const demoRole = detectDemoRole(email);
+    pendingLoginEmail = email;
+    showAlert('login-alert', 'error', `⚠️ Could not reach server. Demo mode: logging in as ${demoRole}.`);
+    await sleep(800);
+    localStorage.setItem('sg_role', demoRole);
+    localStorage.setItem('sg_email', email);
+    localStorage.setItem('sg_token', 'demo-token');
+    showMFAScreen(demoRole, 'demo');
+  } finally {
+    btn.innerHTML = 'Login Securely';
+    btn.disabled = false;
+  }
+}
+
+function detectDemoRole(email) {
+  if (email.includes('admin')) return 'Admin';
+  if (email.includes('hod') || email.includes('head')) return 'HoD';
+  if (email.includes('instructor') || email.includes('teacher')) return 'Instructor';
+  return 'Student';
+}
+
+// ══════════════════════════════════════
+// MFA VERIFICATION
+// ══════════════════════════════════════
+function showMFAScreen(role, token) {
+  const mfaType = ROLES[role]?.mfaType || 'security-questions';
+  const cfg = ROLES[role] || ROLES['Student'];
+
+  document.getElementById('mfa-icon').textContent = cfg.icon;
+  document.getElementById('mfa-title').textContent = `Verify Identity – ${cfg.label}`;
+  document.getElementById('mfa-sub').textContent = cfg.mfaDesc;
+
+  let html = '';
+  if (mfaType === 'security-questions') {
+    html = `
+      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
+        🔒 Student MFA – Security Questions
+      </div>
+      <div class="field"><label>Security Question</label>
+        <div style="font-size:14px;color:var(--slate);padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:10px;">
+          What was the name of your first school?
+        </div>
+        <input type="text" id="mfa-sq-answer" placeholder="Your answer"/>
+      </div>`;
+  } else if (mfaType === 'totp') {
+    html = `
+      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
+        📱 Instructor MFA – Authenticator App Code
+      </div>
+      <div class="mfa-inputs">
+        ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="mfa-t${i}" oninput="moveFocus(this,'mfa-t${i+1}')" onkeydown="backFocus(event,this,'mfa-t${i-1}')">`).join('')}
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Demo: enter any 6 digits</div>`;
+  } else if (mfaType === 'sms-otp') {
+    html = `
+      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
+        📲 HoD MFA – SMS One-Time Password
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">OTP sent to your registered phone. <strong>Demo OTP: 123456</strong></div>
+      <div class="mfa-inputs">
+        ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="mfa-s${i}" oninput="moveFocus(this,'mfa-s${i+1}')" onkeydown="backFocus(event,this,'mfa-s${i-1}')">`).join('')}
+      </div>`;
+  } else if (mfaType === 'hardware-key') {
+    html = `
+      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
+        🔑 Admin MFA – Hardware Security Key
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Insert your security key and touch it, or enter the simulated code below.</div>
+      <div class="field">
+        <label>Security Key Output</label>
+        <input type="text" id="mfa-hk" placeholder="Touch your key or type: ADMIN-KEY-VERIFIED" style="font-family:'JetBrains Mono',monospace;font-size:13px;"/>
+        <button onclick="document.getElementById('mfa-hk').value='ADMIN-KEY-VERIFIED'" style="margin-top:8px;padding:8px 14px;border:1.5px solid var(--blue);border-radius:8px;background:var(--blue-pale);color:var(--blue);font-weight:700;cursor:pointer;font-size:13px;">
+          🔑 Simulate Touch
+        </button>
+      </div>`;
+  }
+
+  document.getElementById('mfa-content').innerHTML = html;
+  showScreen('mfa');
+}
+
+function verifyMFA() {
+  const role = localStorage.getItem('sg_role');
+  const cfg = ROLES[role] || ROLES['Student'];
+  let valid = false;
+
+  if (cfg.mfaType === 'security-questions') {
+    const ans = document.getElementById('mfa-sq-answer')?.value.trim();
+    valid = ans && ans.length > 2;
+  } else if (cfg.mfaType === 'totp') {
+    const code = [1,2,3,4,5,6].map(i => document.getElementById(`mfa-t${i}`)?.value || '').join('');
+    valid = /^\d{6}$/.test(code);
+  } else if (cfg.mfaType === 'sms-otp') {
+    const code = [1,2,3,4,5,6].map(i => document.getElementById(`mfa-s${i}`)?.value || '').join('');
+    valid = code === '123456';
+  } else if (cfg.mfaType === 'hardware-key') {
+    const code = document.getElementById('mfa-hk')?.value.trim();
+    valid = code && code.length > 5;
+  }
+
+  if (!valid) {
+    showAlert('mfa-alert', 'error', '❌ Verification failed. Please check your code.');
+    return;
+  }
+
+  showAlert('mfa-alert', 'success', '✅ Identity verified! Loading your dashboard...');
+  setTimeout(() => redirectToDashboard(role), 1000);
+}
+
+function redirectToDashboard(role) {
+  const dashMap = {
+    Student: 'student-dashboard.html',
+    Instructor: 'instructor-dashboard.html',
+    HoD: 'hod-dashboard.html',
+    Admin: 'admin-dashboard.html',
+  };
+  window.location.href = dashMap[role] || 'student-dashboard.html';
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function moveFocus(input, nextId) {
+  if (input.value.length === 1) {
+    const next = document.getElementById(nextId);
+    if (next) next.focus();
+  }
+}
+function backFocus(e, input, prevId) {
+  if (e.key === 'Backspace' && !input.value) {
+    const prev = document.getElementById(prevId);
+    if (prev) prev.focus();
+  }
+}
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('show'); }
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

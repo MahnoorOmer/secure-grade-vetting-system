@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureGrade – Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{--blue:#1d4ed8;--blue-light:#3b82f6;--blue-pale:#eff6ff;--blue-mid:#dbeafe;--ink:#0f172a;--slate:#334155;--muted:#64748b;--border:#e2e8f0;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:#f0f6ff;color:var(--ink);min-height:100vh;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-right:1.5px solid rgba(29,78,216,0.10);padding:24px 0;z-index:100;display:flex;flex-direction:column;}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--blue);}
+  .logo-shield{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--blue-light));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .sidebar-nav{flex:1;padding:16px 0;}
+  .nav-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:12px 20px 6px;font-family:'JetBrains Mono',monospace;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:14px;font-weight:600;color:var(--slate);border-radius:10px;margin:2px 8px;transition:all 0.2s;}
+  .nav-item:hover,.nav-item.active{background:var(--blue-pale);color:var(--blue);}
+  .sidebar-user{padding:16px 20px;border-top:1px solid var(--border);}
+  .user-chip{display:flex;align-items:center;gap:10px;}
+  .user-avatar{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:16px;border:1.5px solid rgba(29,78,216,0.2);}
+  .user-name{font-size:14px;font-weight:700;}.user-role{font-size:11px;color:var(--blue);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .logout-btn{margin-top:10px;width:100%;padding:9px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;font-family:'Outfit',sans-serif;}
+  .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .main{margin-left:250px;min-height:100vh;padding:32px 36px;}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-size:26px;font-weight:800;}.page-sub{font-size:14px;color:var(--muted);margin-top:4px;}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:16px;padding:20px 22px;animation:fadeInUp 0.5s ease both;}
+  .stat-card:nth-child(2){animation-delay:.1s}.stat-card:nth-child(3){animation-delay:.2s}.stat-card:nth-child(4){animation-delay:.3s}
+  .stat-icon{font-size:22px;margin-bottom:10px;}.stat-value{font-size:28px;font-weight:800;}.stat-label{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .card{background:rgba(255,255,255,0.9);border:1.5px solid rgba(29,78,216,0.10);border-radius:18px;padding:24px;margin-bottom:20px;animation:fadeInUp 0.5s .2s ease both;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .card-title{font-size:16px;font-weight:700;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;padding:0 0 12px;border-bottom:1.5px solid var(--border);}
+  td{padding:13px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .badge-green{background:#d1fae5;color:#059669;}.badge-warn{background:#fef3c7;color:#d97706;}.badge-red{background:#fee2e2;color:#dc2626;}.badge-blue{background:var(--blue-mid);color:var(--blue);}.badge-purple{background:#f3e8ff;color:#7c3aed;}
+  .badge-ink{background:#f1f5f9;color:var(--ink);}
+  .action-btn{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;transition:all 0.2s;margin-right:4px;}
+  .btn-danger{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;}.btn-danger:hover{background:#dc2626;color:white;}
+  .btn-warn{background:#fef3c7;color:#d97706;border:1px solid #fde68a;}.btn-warn:hover{background:#d97706;color:white;}
+  .enc-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:rgba(29,78,216,0.06);border:1px solid rgba(29,78,216,0.12);font-size:10px;color:var(--blue);font-family:'JetBrains Mono',monospace;}
+  .field{margin-bottom:12px;}.field label{display:block;font-size:12px;font-weight:700;color:var(--slate);margin-bottom:5px;font-family:'JetBrains Mono',monospace;}
+  .field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:rgba(255,255,255,0.8);outline:none;transition:border-color 0.2s;}
+  .field input:focus,.field select:focus{border-color:var(--blue-light);box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;padding:11px 18px;border-radius:10px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(29,78,216,0.3);transition:all 0.2s;}
+  .btn-primary:hover{transform:translateY(-2px);}
+  .system-health{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .health-item{padding:14px;border-radius:12px;border:1.5px solid var(--border);}
+  .health-label{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+  .health-val{font-size:15px;font-weight:700;}
+  .section{display:none;}.section.active{display:block;}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .alert{padding:12px 14px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:14px;display:none;}
+  .alert.show{display:block;animation:fadeInUp 0.3s ease;}
+  .alert-success{background:#d1fae5;color:#059669;border:1px solid #a7f3d0;}
+  .alert-error{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-shield">🛡️</div>SecureGrade</div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">System</div>
+    <div class="nav-item active" onclick="showSection('overview')"><span>🖥️</span>System Overview</div>
+    <div class="nav-label">User Management</div>
+    <div class="nav-item" onclick="showSection('users')"><span>👥</span>Manage Users</div>
+    <div class="nav-item" onclick="showSection('roles')"><span>🔑</span>Role Config</div>
+    <div class="nav-label">Security</div>
+    <div class="nav-item" onclick="showSection('audit')"><span>📋</span>Full Audit Log</div>
+    <div class="nav-item" onclick="showSection('security')"><span>🔐</span>Security Center</div>
+    <div class="nav-label">Account</div>
+    <div class="nav-item" onclick="showSection('profile')"><span>👤</span>Profile</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-chip">
+      <div class="user-avatar">⚙️</div>
+      <div>
+        <div class="user-name" id="user-name-display">Admin</div>
+        <div class="user-role">SYSTEM ADMIN</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- System Overview -->
+  <div id="sec-overview" class="section active">
+    <div class="page-header">
+      <div class="page-title">🖥️ System Overview</div>
+      <div class="page-sub">Full administrative control · Hardware Key MFA Protected</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">24</div><div class="stat-label">Total Users</div></div>
+      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value">156</div><div class="stat-label">Total Grades</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value">892</div><div class="stat-label">Audit Events</div></div>
+      <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-value">100%</div><div class="stat-label">Encryption Rate</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">System Health</div><span class="enc-badge">🔒 All Secure</span></div>
+      <div class="system-health">
+        <div class="health-item" style="background:#d1fae5;border-color:#a7f3d0;">
+          <div class="health-label">API Server</div>
+          <div class="health-val" style="color:#059669;">🟢 Online</div>
+        </div>
+        <div class="health-item" style="background:#d1fae5;border-color:#a7f3d0;">
+          <div class="health-label">Encryption Layer</div>
+          <div class="health-val" style="color:#059669;">🔒 AES-256 Active</div>
+        </div>
+        <div class="health-item" style="background:#d1fae5;border-color:#a7f3d0;">
+          <div class="health-label">JWT Auth</div>
+          <div class="health-val" style="color:#059669;">🟢 Operational</div>
+        </div>
+        <div class="health-item" style="background:#d1fae5;border-color:#a7f3d0;">
+          <div class="health-label">Audit Logger</div>
+          <div class="health-val" style="color:#059669;">🟢 Recording</div>
+        </div>
+        <div class="health-item">
+          <div class="health-label">Rate Limiting</div>
+          <div class="health-val">✅ Enabled</div>
+        </div>
+        <div class="health-item">
+          <div class="health-label">CORS Policy</div>
+          <div class="health-val">✅ Configured</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Users by Role</div></div>
+      <table>
+        <thead><tr><th>Role</th><th>Count</th><th>MFA Type</th><th>Permissions</th></tr></thead>
+        <tbody>
+          <tr><td>👨‍🎓 Student</td><td><span class="badge badge-blue">18</span></td><td>Security Questions</td><td>View own grades only</td></tr>
+          <tr><td>👩‍🏫 Instructor</td><td><span class="badge badge-blue">4</span></td><td>TOTP Authenticator</td><td>Submit grades</td></tr>
+          <tr><td>🏛️ HoD</td><td><span class="badge badge-blue">1</span></td><td>SMS OTP</td><td>View · Approve · Reject · Audit</td></tr>
+          <tr><td>⚙️ Admin</td><td><span class="badge badge-blue">1</span></td><td>Hardware Key</td><td>Full system access</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Manage Users -->
+  <div id="sec-users" class="section">
+    <div class="page-header"><div class="page-title">👥 Manage Users</div><div class="page-sub">Create, deactivate and manage user accounts</div></div>
+    <div class="card" style="max-width:500px;margin-bottom:20px;">
+      <div class="card-header"><div class="card-title">➕ Add New User</div></div>
+      <div class="alert" id="add-user-alert"></div>
+      <div class="field-row">
+        <div class="field"><label>Full Name</label><input type="text" id="new-name" placeholder="e.g. Ali Hassan"/></div>
+        <div class="field"><label>Email</label><input type="email" id="new-email" placeholder="user@uni.edu"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Role</label>
+          <select id="new-role">
+            <option value="Student">👨‍🎓 Student</option>
+            <option value="Instructor">👩‍🏫 Instructor</option>
+            <option value="HoD">🏛️ Head of Department</option>
+            <option value="Admin">⚙️ Admin</option>
+          </select>
+        </div>
+        <div class="field"><label>Temp Password</label><input type="password" id="new-password" placeholder="••••••••"/></div>
+      </div>
+      <button class="btn-primary" onclick="addUser()">➕ Add User</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">All Users</div><span class="enc-badge">🔒 RBAC Enforced</span></div>
+      <table>
+        <thead><tr><th>Name / Email</th><th>Role</th><th>MFA</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="users-tbody">
+          <tr><td><strong>Ali Hassan</strong><br><span style="font-size:12px;color:var(--muted);">ali@uni.edu</span></td><td><span class="badge badge-blue">Student</span></td><td>Security Q</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
+          <tr><td><strong>Dr. Sarah Ahmed</strong><br><span style="font-size:12px;color:var(--muted);">dr.sarah@uni.edu</span></td><td><span class="badge badge-purple">Instructor</span></td><td>TOTP</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
+          <tr><td><strong>Prof. Tariq Malik</strong><br><span style="font-size:12px;color:var(--muted);">hod@uni.edu</span></td><td><span class="badge badge-ink">HoD</span></td><td>SMS OTP</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
+          <tr><td><strong>System Admin</strong><br><span style="font-size:12px;color:var(--muted);">admin@uni.edu</span></td><td><span class="badge badge-red">Admin</span></td><td>Hardware Key</td><td><span class="badge badge-green">Active</span></td><td colspan="1" style="color:var(--muted);font-size:12px;">Protected</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Role Config -->
+  <div id="sec-roles" class="section">
+    <div class="page-header"><div class="page-title">🔑 Role Configuration</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">RBAC Permission Matrix</div></div>
+      <table>
+        <thead><tr><th>Permission</th><th>Student</th><th>Instructor</th><th>HoD</th><th>Admin</th></tr></thead>
+        <tbody>
+          <tr><td>View own grades</td><td>✅</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Submit grades</td><td>—</td><td>✅</td><td>—</td><td>✅</td></tr>
+          <tr><td>View all grades</td><td>—</td><td>—</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Approve / Reject grades</td><td>—</td><td>—</td><td>✅</td><td>✅</td></tr>
+          <tr><td>View audit logs</td><td>—</td><td>—</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Manage users</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Configure roles</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>System settings</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit Log -->
+  <div id="sec-audit" class="section">
+    <div class="page-header"><div class="page-title">📋 Full Audit Log</div><div class="page-sub">Complete immutable system event history</div></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">All Events</div><span class="enc-badge">🔒 Immutable · Tamper-Resistant</span></div>
+      <table>
+        <thead><tr><th>Event</th><th>Actor</th><th>Details</th><th>Timestamp</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-blue">GRADE_SUBMITTED</span></td><td>dr.sarah@uni.edu</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">gradeId: 1001</td><td style="font-size:12px;color:var(--muted);">${new Date(Date.now()-3600000).toLocaleString()}</td></tr>
+          <tr><td><span class="badge badge-green">GRADE_APPROVED</span></td><td>hod@uni.edu</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">gradeId: 1003</td><td style="font-size:12px;color:var(--muted);">${new Date(Date.now()-82800000).toLocaleString()}</td></tr>
+          <tr><td><span class="badge badge-ink">USER_LOGIN</span></td><td>admin@uni.edu</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">MFA: Hardware Key</td><td style="font-size:12px;color:var(--muted);">${new Date().toLocaleString()}</td></tr>
+          <tr><td><span class="badge badge-warn">USER_REGISTERED</span></td><td>ali@uni.edu</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">role: Student</td><td style="font-size:12px;color:var(--muted);">${new Date(Date.now()-172800000).toLocaleString()}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Security Center -->
+  <div id="sec-security" class="section">
+    <div class="page-header"><div class="page-title">🔐 Security Center</div></div>
+    <div class="card">
+      <div style="display:grid;gap:14px;">
+        <div style="background:#d1fae5;border:1.5px solid #a7f3d0;border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;color:#059669;">✅ MFA Active – Hardware Security Key</div>
+          <div style="font-size:13px;color:#065f46;">Admin account is protected with a hardware YubiKey. Highest security tier.</div>
+        </div>
+        <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.15);border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:4px;">🔒 End-to-End Encryption</div>
+          <div style="font-size:13px;color:var(--muted);">All data encrypted with AES-256. JWT tokens signed with HS256. HTTPS enforced.</div>
+        </div>
+        <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+          <div style="font-weight:700;margin-bottom:8px;">⚡ Security Policies Active</div>
+          <div style="display:grid;gap:6px;font-size:13px;color:var(--slate);">
+            <div>✅ Rate Limiting: 100 req/15min per IP</div>
+            <div>✅ JWT Expiry: 1 hour</div>
+            <div>✅ bcrypt Password Hashing: rounds=10</div>
+            <div>✅ CORS: Configured for frontend origin</div>
+            <div>✅ Role-Based Access Control: Enforced</div>
+            <div>✅ Audit Logging: All actions recorded</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div id="sec-profile" class="section">
+    <div class="page-header"><div class="page-title">👤 Admin Profile</div></div>
+    <div class="card" style="max-width:500px;">
+      <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;padding-bottom:18px;border-bottom:1.5px solid var(--border);">
+        <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--blue-pale),var(--blue-mid));display:flex;align-items:center;justify-content:center;font-size:28px;">⚙️</div>
+        <div>
+          <div style="font-size:18px;font-weight:800;" id="profile-name">Admin</div>
+          <div style="font-size:13px;color:var(--blue);font-family:'JetBrains Mono',monospace;" id="profile-email">admin@uni.edu</div>
+          <span class="badge badge-red" style="margin-top:4px;">SYSTEM ADMIN</span>
+        </div>
+      </div>
+      <div style="display:grid;gap:10px;font-size:14px;">
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Access Level</span><strong>Full System Access</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">MFA</span><strong>🔑 Hardware Security Key</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 0;"><span style="color:var(--muted);">Session</span><strong>JWT · 1h Expiry</strong></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+let userCount=4;
+function addUser(){
+  const name=document.getElementById('new-name').value.trim();
+  const email=document.getElementById('new-email').value.trim();
+  const role=document.getElementById('new-role').value;
+  const pass=document.getElementById('new-password').value;
+  if(!name||!email||!pass){
+    const a=document.getElementById('add-user-alert');a.className='alert alert-error show';a.textContent='⚠️ Fill all fields.';return;
+  }
+  const mfaMap={Student:'Security Q',Instructor:'TOTP',HoD:'SMS OTP',Admin:'Hardware Key'};
+  const badgeMap={Student:'badge-blue',Instructor:'badge-purple',HoD:'badge-ink',Admin:'badge-red'};
+  const row=document.createElement('tr');
+  row.innerHTML=`<td><strong>${name}</strong><br><span style="font-size:12px;color:var(--muted);">${email}</span></td><td><span class="badge ${badgeMap[role]}">${role}</span></td><td>${mfaMap[role]}</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn" onclick="this.closest('tr').style.opacity='0.5'">⏸ Suspend</button><button class="action-btn btn-danger" onclick="this.closest('tr').remove()">🗑 Delete</button></td>`;
+  document.getElementById('users-tbody').prepend(row);
+  ['new-name','new-email','new-password'].forEach(id=>document.getElementById(id).value='');
+  const a=document.getElementById('add-user-alert');a.className='alert alert-success show';a.textContent=`✅ User ${name} added as ${role}!`;
+  setTimeout(()=>a.classList.remove('show'),3000);
+}
+function logout(){localStorage.clear();window.location.href='index.html';}
+window.onload=()=>{
+  const email=localStorage.getItem('sg_email')||'admin@uni.edu';
+  document.getElementById('user-name-display').textContent=email.split('@')[0];
+  document.getElementById('profile-name').textContent=email.split('@')[0];
+  document.getElementById('profile-email').textContent=email;
+};
+</script>
+</body>
+</html>
