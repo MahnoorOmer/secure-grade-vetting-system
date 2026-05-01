@@ -775,7 +775,9 @@ function buildMFASetup(role, cfg) {
       </div>
       <div class="field"><label>Enter OTP (test: 123456)</label>
         <div class="mfa-inputs" id="sms-setup-inputs">
-          ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="sms-s${i}" oninput="moveFocus(this,'sms-s${i+1}')" onkeydown="backFocus(event,this,'sms-s${i-1}')">`).join('')}
+          ${[1, 2, 3, 4, 5, 6].map(i => 
+            `<input type="text" maxlength="1" id="sms-s${i}" class="mfa-digit-input">`
+          ).join('')}
         </div>
       </div>`;
   } else if (cfg.mfaType === 'hardware-key') {
@@ -1006,7 +1008,7 @@ function showMFAScreen(role, token) {
       <div class="field">
         <label>Security Key Output</label>
         <input type="text" id="mfa-hk" placeholder="Touch your key or type: ADMIN-KEY-VERIFIED" style="font-family:'JetBrains Mono',monospace;font-size:13px;"/>
-        <button onclick="document.getElementById('mfa-hk').value='ADMIN-KEY-VERIFIED'" style="margin-top:8px;padding:8px 14px;border:1.5px solid var(--blue);border-radius:8px;background:var(--blue-pale);color:var(--blue);font-weight:700;cursor:pointer;font-size:13px;">
+        <button id="mfa-simulate-btn" ...>
           🔑 Simulate Touch
         </button>
       </div>`;
@@ -1081,5 +1083,6 @@ function hideAlert(id) {
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
+<script src="script.js"></script>
 </body>
 </html>

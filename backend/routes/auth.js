@@ -211,7 +211,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { registerSchema, loginSchema } = require("../validators/authValidator");
-const usersFilePath = path.join(__dirname, "../users.json");
+const usersFilePath = path.join(__dirname, "../data/users.json");
 
 // Helper: Ensure the file exists so the server doesn't crash on first run
 if (!fs.existsSync(usersFilePath)) {
