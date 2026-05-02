@@ -1,181 +1,119 @@
-// const express = require("express");
-// const router = express.Router();
-
-// const authMiddleware = require("../middleware/authmiddleware");
-// const roleMiddleware = require("../middleware/rolemiddleware");
-// const { addLog, getLogs } = require("../middleware/auditlogger");
-
-// const grades = [];
-
-
-// // =====================
-// // SUBMIT GRADE (Instructor)
-// // =====================
-// router.post("/", authMiddleware, roleMiddleware("Instructor"), (req, res) => {
-//   const grade = {
-//     ...req.body,
-//     id: Date.now(),
-//     status: "PENDING",
-//     submittedBy: req.user.email,
-//     createdAt: new Date().toISOString()
-//   };
-
-//   grades.push(grade);
-
-//   // 🔥 ADD LOG HERE
-//   addLog("GRADE_SUBMITTED", req.user.email, {
-//     gradeId: grade.id
-//   });
-
-//   res.json(grade);
-// });
-
-
-// // =====================
-// // GET ALL GRADES (HoD)
-// // =====================
-// router.get("/", authMiddleware, roleMiddleware("HoD"), (req, res) => {
-//   res.json(grades);
-// });
-
-
-// // =====================
-// // UPDATE GRADE STATUS (HoD)
-// // =====================
-// router.patch("/:id", authMiddleware, roleMiddleware("HoD"), (req, res) => {
-//   const grade = grades.find(g => g.id == req.params.id);
-
-//   if (!grade) {
-//     return res.status(404).json({ error: "Grade not found" });
-//   }
-
-//   const oldStatus = grade.status;
-
-//   grade.status = req.body.status;
-//   grade.reviewedBy = req.user.email;
-//   grade.reviewedAt = new Date().toISOString();
-
-//   // 🔥 ADD LOG HERE
-//   addLog("GRADE_UPDATED", req.user.email, {
-//     gradeId: grade.id,
-//     oldStatus,
-//     newStatus: grade.status
-//   });
-
-//   res.json(grade);
-// });
-
-
-// // =====================
-// // VIEW LOGS (HoD ONLY)
-// // =====================
-// router.get("/logs", authMiddleware, roleMiddleware("HoD"), (req, res) => {
-//   res.json(getLogs());
-// });
-
-// module.exports = router;
-
-
-
-
-
-
-
-
-
-const express = require("express");
-const router = express.Router();
-
+const express  = require("express");
+const router   = express.Router();
+const crypto   = require("crypto");
+const pool     = require("../../database/db");
 const authMiddleware = require("../middleware/authmiddleware");
 const roleMiddleware = require("../middleware/rolemiddleware");
-const { addLog, getLogs } = require("../middleware/auditlogger");
+const { addLog } = require("../middleware/auditlogger");
 
-// In-memory store (Consider moving this to a JSON file in Phase 4 for persistence)
-const grades = [];
-
-// =====================
 // SUBMIT GRADE (Instructor)
-// =====================
-// Security Upgrade: Using array in roleMiddleware to allow for future role expansion
-router.post("/", authMiddleware, roleMiddleware(["Instructor"]), (req, res) => {
-    // Basic Input Validation
+router.post("/", authMiddleware, roleMiddleware(["Instructor"]), async (req, res) => {
+  try {
     if (!req.body.studentId || !req.body.gradeValue) {
-        return res.status(400).json({ error: "Missing required grade details" });
+      return res.status(400).json({ error: "Missing studentId or gradeValue" });
     }
-
-    const grade = {
-        ...req.body,
-        id: Date.now(),
-        status: "PENDING",
-        submittedBy: req.user.email, // Integrity: Always use verified email from JWT
-        createdAt: new Date().toISOString()
+    const gradeData = {
+      studentId:   req.body.studentId,
+      studentName: req.body.studentName || null,
+      course:      req.body.course      || null,
+      gradeValue:  req.body.gradeValue,
+      semester:    req.body.semester    || null,
+      remarks:     req.body.remarks     || null,
     };
+    const signature = crypto.createHash("sha256")
+      .update(JSON.stringify(gradeData) + req.user.id + Date.now()).digest("hex");
 
-    grades.push(grade);
-
-    // 🔥 AUDIT LOG: Part of Phase 3 Security
-    // This will be hashed in the logger to ensure the trail is tamper-evident
-    addLog(req.user.email, "GRADE_SUBMITTED", {
-        gradeId: grade.id,
-        studentId: grade.studentId
-    });
-
-    res.json(grade);
+    const id = crypto.randomUUID();
+    const result = await pool.query(
+      `INSERT INTO grades (id, data, signature, status, created_by)
+       VALUES ($1, $2, $3, 'pending', $4)
+       RETURNING id, data, signature, status, created_at`,
+      [id, JSON.stringify(gradeData), signature, req.user.id]
+    );
+    const grade = result.rows[0];
+    await addLog(req.user.email, "GRADE_SUBMITTED", { gradeId: grade.id, studentId: gradeData.studentId }, req.user.id);
+    res.status(201).json(grade);
+  } catch (err) {
+    console.error("Grade submit error:", err.message);
+    res.status(500).json({ error: "Failed to submit grade" });
+  }
 });
 
-
-// =====================
 // GET ALL GRADES (HoD / Admin)
-// =====================
-// Security Upgrade: Granting Admin access for system oversight
-router.get("/", authMiddleware, roleMiddleware(["HoD", "Admin"]), (req, res) => {
-    res.json(grades);
+router.get("/", authMiddleware, roleMiddleware(["HoD", "Admin"]), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT g.id, g.data, g.signature, g.status, g.created_at, g.updated_at,
+              u1.email AS submitted_by, u1.role AS submitted_role,
+              u2.email AS approved_by
+       FROM grades g
+       JOIN users u1 ON g.created_by = u1.id
+       LEFT JOIN users u2 ON g.approved_by = u2.id
+       ORDER BY g.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get grades error:", err.message);
+    res.status(500).json({ error: "Failed to fetch grades" });
+  }
 });
 
+// GET MY GRADES (Student — by student_id in profile)
+router.get("/my", authMiddleware, roleMiddleware(["Student"]), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT g.id, g.data, g.status, g.created_at, u1.email AS instructor_email
+       FROM grades g
+       JOIN users u1 ON g.created_by = u1.id
+       ORDER BY g.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get my grades error:", err.message);
+    res.status(500).json({ error: "Failed to fetch grades" });
+  }
+});
 
-// =====================
 // UPDATE GRADE STATUS (HoD)
-// =====================
-router.patch("/:id", authMiddleware, roleMiddleware(["HoD"]), (req, res) => {
-    const grade = grades.find(g => g.id == req.params.id);
-
-    if (!grade) {
-        return res.status(404).json({ error: "Grade not found" });
-    }
-
-    // Security Upgrade: Validate status transition (e.g., only ALLOWED statuses)
-    const allowedStatuses = ["APPROVED", "REJECTED"];
+router.patch("/:id", authMiddleware, roleMiddleware(["HoD"]), async (req, res) => {
+  try {
+    const allowedStatuses = ["approved", "rejected"];
     if (!allowedStatuses.includes(req.body.status)) {
-        return res.status(400).json({ error: "Invalid status update" });
+      return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
     }
+    const current = await pool.query("SELECT id, status FROM grades WHERE id = $1", [req.params.id]);
+    if (current.rows.length === 0) return res.status(404).json({ error: "Grade not found" });
+    const oldStatus = current.rows[0].status;
 
-    const oldStatus = grade.status;
-    grade.status = req.body.status;
-    grade.reviewedBy = req.user.email;
-    grade.reviewedAt = new Date().toISOString();
-
-    // 🔥 AUDIT LOG: Records the vetting decision
-    addLog(req.user.email, "GRADE_UPDATED", {
-        gradeId: grade.id,
-        oldStatus,
-        newStatus: grade.status
-    });
-
-    res.json(grade);
+    const result = await pool.query(
+      `UPDATE grades SET status = $1, approved_by = $2, updated_at = NOW()
+       WHERE id = $3 RETURNING id, data, signature, status, updated_at`,
+      [req.body.status, req.user.id, req.params.id]
+    );
+    const updated = result.rows[0];
+    await addLog(req.user.email, "GRADE_STATUS_UPDATED", { gradeId: updated.id, oldStatus, newStatus: updated.status }, req.user.id);
+    res.json(updated);
+  } catch (err) {
+    console.error("Update grade error:", err.message);
+    res.status(500).json({ error: "Failed to update grade" });
+  }
 });
 
-
-// =====================
-// VIEW LOGS (HoD / Admin ONLY)
-// =====================
-// This endpoint allows the HoD to view the tamper-evident audit trail
-router.get("/logs", authMiddleware, roleMiddleware(["HoD", "Admin"]), (req, res) => {
-    try {
-        const logs = getLogs();
-        res.json(logs);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to retrieve audit trail" });
-    }
+// VIEW AUDIT LOGS (HoD / Admin)
+router.get("/logs", authMiddleware, roleMiddleware(["HoD", "Admin"]), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT al.id, al.action, al.timestamp, al.hash, al.previous_hash, al.metadata,
+              u.email AS user_email, u.role AS user_role
+       FROM audit_logs al
+       LEFT JOIN users u ON al.user_id = u.id
+       ORDER BY al.timestamp DESC LIMIT 200`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get logs error:", err.message);
+    res.status(500).json({ error: "Failed to retrieve audit trail" });
+  }
 });
 
 module.exports = router;

@@ -608,7 +608,7 @@
 // ══════════════════════════════════════
 // CONSTANTS & STATE
 // ══════════════════════════════════════
-const API = 'http://localhost:5000';
+const API = '';
 let currentRole = null;
 let signupStep = 1;
 let pendingLoginEmail = null;
@@ -783,18 +783,18 @@ function buildMFASetup(role, cfg) {
   } else if (cfg.mfaType === 'hardware-key') {
     html += `
       <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:13px;color:var(--slate);margin-bottom:12px;">🔑 Register your hardware security key</div>
+        <div style="font-size:13px;color:var(--slate);margin-bottom:12px;">🔑 Register your hardware security key (Demo Mode)</div>
         <div class="field"><label>Device Serial Number</label>
-          <input type="text" id="hk-serial" placeholder="e.g. YK-123456789" style="font-family:'JetBrains Mono',monospace;"/>
+          <input type="text" id="hk-serial" value="YK-123456789" style="font-family:'JetBrains Mono',monospace;"/>
         </div>
         <div class="field"><label>Device PIN</label>
-          <input type="password" id="hk-pin" placeholder="6-digit PIN" maxlength="6"/>
+          <input type="password" id="hk-pin" value="123456" maxlength="6"/>
         </div>
       </div>
-      <div class="field"><label>Touch your security key (or enter code below)</label>
-        <input type="text" id="hk-code" placeholder="Simulated key output: press 'Touch Key'" style="font-family:'JetBrains Mono',monospace;"/>
-        <button type="button" onclick="simulateTouchKey()" style="margin-top:8px;padding:8px 14px;border:1.5px solid var(--blue);border-radius:8px;background:var(--blue-pale);color:var(--blue);font-weight:700;cursor:pointer;font-size:13px;">
-          🔑 Touch Key (Simulate)
+      <div class="field"><label>Security Key Output</label>
+        <input type="text" id="hk-code" placeholder="Click button below to simulate" style="font-family:'JetBrains Mono',monospace;"/>
+        <button type="button" onclick="simulateTouchKey()" style="margin-top:8px;padding:10px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;font-weight:700;cursor:pointer;font-size:13px;width:100%;">
+          🔑 Click Here to Simulate Hardware Key Touch
         </button>
       </div>`;
   }
@@ -1004,12 +1004,12 @@ function showMFAScreen(role, token) {
       <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
         🔑 Admin MFA – Hardware Security Key
       </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Insert your security key and touch it, or enter the simulated code below.</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">This is a simulated hardware key for demo. Click the button below to verify.</div>
       <div class="field">
         <label>Security Key Output</label>
-        <input type="text" id="mfa-hk" placeholder="Touch your key or type: ADMIN-KEY-VERIFIED" style="font-family:'JetBrains Mono',monospace;font-size:13px;"/>
-        <button id="mfa-simulate-btn" ...>
-          🔑 Simulate Touch
+        <input type="text" id="mfa-hk" value="ADMIN-KEY-VERIFIED" style="font-family:'JetBrains Mono',monospace;font-size:13px;background:#f0f6ff;"/>
+        <button type="button" onclick="document.getElementById('mfa-hk').value='ADMIN-KEY-VERIFIED-'+Date.now();" style="margin-top:8px;padding:10px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;font-weight:700;cursor:pointer;font-size:13px;width:100%;">
+          🔑 Simulate Hardware Key Touch
         </button>
       </div>`;
   }
@@ -1034,7 +1034,7 @@ function verifyMFA() {
     valid = code === '123456';
   } else if (cfg.mfaType === 'hardware-key') {
     const code = document.getElementById('mfa-hk')?.value.trim();
-    valid = code && code.length > 5;
+    valid = true; // Demo mode: hardware key is always accepted
   }
 
   if (!valid) {

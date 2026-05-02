@@ -3,10 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "backend": "cd backend && node server.js",
-    "frontend": "npx http-server ./SecureGrade-Frontend",
-    "start": "node --no-deprecation backend/server.js",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +22,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "zod": "^4.4.1"
   }
 }

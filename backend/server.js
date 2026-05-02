@@ -241,15 +241,29 @@ const authLimiter = rateLimit({
 app.use("/auth", authLimiter);
 
 // CORS & Body Parsing
-app.use(cors());
+
 app.use(express.json({ limit: "10kb" })); // Security: Limit body size to prevent DoS
 
+// ✅ Catch invalid JSON errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    console.error("❌ Invalid JSON received:", err.message);
+    return res.status(400).json({ error: "Invalid JSON format" });
+  }
+  next();
+});
 // ==========================================
 // 2. STATIC FILES & ROUTES
 // ==========================================
 
 // Serve static files from frontend folder
 app.use(express.static(path.join(__dirname, "../frontend")));
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // Route Mounts
 app.use("/auth", authRoutes);
@@ -308,11 +322,4 @@ https.createServer(sslOptions, app).listen(PORT, () => {
   console.log(`${chalk.white("URL:")}     ${chalk.cyan.underline(`https://localhost:${PORT}`)}`);
   console.log(boxLine);
   console.log(chalk.gray("\nActivity Stream:"));
-
-  app.use(cors({
-  origin: "*", // Allows all origins (good for debugging labs)
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-})); 
-
 });
