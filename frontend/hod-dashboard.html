@@ -163,6 +163,17 @@ const API = '';
 let allGrades = [];
 let auditLogs = [];
 
+function escapeHTML(str) {
+  if (!str && str !== 0) return '';
+  return String(str).replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag]));
+}
+
 // Demo seed data
 const DEMO_GRADES = [
   {id:1001,studentEmail:'ali@uni.edu',courseCode:'CY321',marks:87,letterGrade:'A',semester:'Spring 2025',status:'PENDING',submittedBy:'dr.sarah@uni.edu',createdAt:new Date(Date.now()-3600000).toISOString()},
@@ -227,15 +238,15 @@ function renderPending(){
   wrap.innerHTML=`<table>
     <thead><tr><th>Student</th><th>Course</th><th>Marks</th><th>Instructor</th><th>Submitted</th><th>Actions</th></tr></thead>
     <tbody>${pending.map(g=>`
-      <tr id="row-${g.id}">
-        <td>${g.studentEmail}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${g.courseCode}</td>
-        <td><strong>${g.marks}/100</strong> · ${g.letterGrade}</td>
-        <td style="font-size:12px;">${g.submittedBy}</td>
-        <td style="font-size:12px;color:var(--muted);">${new Date(g.createdAt).toLocaleDateString()}</td>
+      <tr id="row-${escapeHTML(g.id)}">
+        <td>${escapeHTML(g.studentEmail)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${escapeHTML(g.courseCode)}</td>
+        <td><strong>${escapeHTML(g.marks)}/100</strong> · ${escapeHTML(g.letterGrade)}</td>
+        <td style="font-size:12px;">${escapeHTML(g.submittedBy)}</td>
+        <td style="font-size:12px;color:var(--muted);">${escapeHTML(new Date(g.createdAt).toLocaleDateString())}</td>
         <td>
-          <button class="action-btn btn-approve" onclick="reviewGrade(${g.id},'APPROVED')">✅ Approve</button>
-          <button class="action-btn btn-reject" onclick="reviewGrade(${g.id},'REJECTED')">❌ Reject</button>
+          <button class="action-btn btn-approve" onclick="reviewGrade(${escapeHTML(g.id)},'APPROVED')">✅ Approve</button>
+          <button class="action-btn btn-reject" onclick="reviewGrade(${escapeHTML(g.id)},'REJECTED')">❌ Reject</button>
         </td>
       </tr>`).join('')}
     </tbody>
@@ -248,11 +259,11 @@ function renderAll(){
     <thead><tr><th>Student</th><th>Course</th><th>Marks</th><th>Status</th><th>Reviewed By</th></tr></thead>
     <tbody>${allGrades.map(g=>`
       <tr>
-        <td>${g.studentEmail}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${g.courseCode}</td>
-        <td><strong>${g.marks}/100</strong> · ${g.letterGrade}</td>
-        <td><span class="badge ${g.status==='APPROVED'?'badge-green':g.status==='REJECTED'?'badge-red':'badge-warn'}">${g.status}</span></td>
-        <td style="font-size:12px;color:var(--muted);">${g.reviewedBy||'—'}</td>
+        <td>${escapeHTML(g.studentEmail)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${escapeHTML(g.courseCode)}</td>
+        <td><strong>${escapeHTML(g.marks)}/100</strong> · ${escapeHTML(g.letterGrade)}</td>
+        <td><span class="badge ${g.status==='APPROVED'?'badge-green':g.status==='REJECTED'?'badge-red':'badge-warn'}">${escapeHTML(g.status)}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${escapeHTML(g.reviewedBy||'—')}</td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -302,9 +313,9 @@ async function loadAuditLogs(){
     <div class="log-entry">
       <div class="log-icon">${iconMap[l.action]||'📋'}</div>
       <div>
-        <div class="log-action">${l.action.replace('_',' ')}</div>
-        <div class="log-meta">${l.user} · ${new Date(l.timestamp).toLocaleString()}</div>
-        ${l.data&&Object.keys(l.data).length?`<div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;">${JSON.stringify(l.data)}</div>`:''}
+        <div class="log-action">${escapeHTML(l.action.replace('_',' '))}</div>
+        <div class="log-meta">${escapeHTML(l.user)} · ${escapeHTML(new Date(l.timestamp).toLocaleString())}</div>
+        ${l.data&&Object.keys(l.data).length?`<div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;">${escapeHTML(JSON.stringify(l.data))}</div>`:''}
       </div>
     </div>`).join('');
 }

@@ -9,17 +9,22 @@ const { addLog } = require("../middleware/auditlogger");
 // SUBMIT GRADE (Instructor)
 router.post("/", authMiddleware, roleMiddleware(["Instructor"]), async (req, res) => {
   try {
-    if (!req.body.studentId || !req.body.gradeValue) {
-      return res.status(400).json({ error: "Missing studentId or gradeValue" });
-    }
+    const sanitizeStr = (str) => typeof str === 'string' ? str.replace(/[<>'"]/g, '') : str;
+    
     const gradeData = {
-      studentId:   req.body.studentId,
-      studentName: req.body.studentName || null,
-      course:      req.body.course      || null,
-      gradeValue:  req.body.gradeValue,
-      semester:    req.body.semester    || null,
-      remarks:     req.body.remarks     || null,
+      studentId:   sanitizeStr(req.body.studentId || req.body.studentEmail),
+      studentName: sanitizeStr(req.body.studentName),
+      course:      sanitizeStr(req.body.course || req.body.courseCode),
+      gradeValue:  req.body.gradeValue !== undefined ? req.body.gradeValue : req.body.marks,
+      letterGrade: sanitizeStr(req.body.letterGrade),
+      semester:    sanitizeStr(req.body.semester),
+      remarks:     sanitizeStr(req.body.remarks),
     };
+
+    if (!gradeData.studentId || gradeData.gradeValue === undefined) {
+      return res.status(400).json({ error: "Missing studentId/email or gradeValue/marks" });
+    }
+    
     const signature = crypto.createHash("sha256")
       .update(JSON.stringify(gradeData) + req.user.id + Date.now()).digest("hex");
 

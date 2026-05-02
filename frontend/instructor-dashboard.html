@@ -204,6 +204,17 @@
 const API = '';
 let submissions = [];
 
+function escapeHTML(str) {
+  if (!str && str !== 0) return '';
+  return String(str).replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag]));
+}
+
 function showSection(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+id).classList.add('active');
@@ -273,10 +284,10 @@ function renderSubmissions(){
   }
   tbody.innerHTML=submissions.map(s=>`
     <tr>
-      <td>${s.studentEmail}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${s.courseCode}</td>
-      <td><strong>${s.marks}/100</strong> · ${s.letterGrade}</td>
-      <td style="font-size:12px;color:var(--muted);">${new Date(s.createdAt).toLocaleString()}</td>
+      <td>${escapeHTML(s.studentEmail)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;">${escapeHTML(s.courseCode)}</td>
+      <td><strong>${escapeHTML(s.marks)}/100</strong> · ${escapeHTML(s.letterGrade)}</td>
+      <td style="font-size:12px;color:var(--muted);">${escapeHTML(new Date(s.createdAt).toLocaleString())}</td>
       <td><span class="badge ${s.status==='APPROVED'?'badge-green':'badge-warn'}">${s.status==='APPROVED'?'✅ Approved':'⏳ Pending'}</span></td>
     </tr>`).join('');
 }
