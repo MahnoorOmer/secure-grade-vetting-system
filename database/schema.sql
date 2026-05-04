@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     profile         TEXT            DEFAULT '{}',
     mfa_type        TEXT,
     mfa_secret      TEXT,
+    otp_code        TEXT,
+    otp_expires     DATETIME,
     is_active       BOOLEAN         NOT NULL DEFAULT 1,
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP

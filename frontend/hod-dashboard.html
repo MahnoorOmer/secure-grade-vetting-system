@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  (function() {
+    const token = localStorage.getItem('sg_token');
+    const role = localStorage.getItem('sg_role');
+    if (!token || role !== 'HoD') { window.location.href = 'index.html'; }
+  })();
+</script>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SecureGrade – HoD Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -174,18 +181,7 @@ function escapeHTML(str) {
   }[tag]));
 }
 
-// Demo seed data
-const DEMO_GRADES = [
-  {id:1001,studentEmail:'ali@uni.edu',courseCode:'CY321',marks:87,letterGrade:'A',semester:'Spring 2025',status:'PENDING',submittedBy:'dr.sarah@uni.edu',createdAt:new Date(Date.now()-3600000).toISOString()},
-  {id:1002,studentEmail:'sara@uni.edu',courseCode:'CS401',marks:74,letterGrade:'B',semester:'Spring 2025',status:'PENDING',submittedBy:'prof.tariq@uni.edu',createdAt:new Date(Date.now()-7200000).toISOString()},
-  {id:1003,studentEmail:'usman@uni.edu',courseCode:'CS350',marks:91,letterGrade:'A',semester:'Spring 2025',status:'APPROVED',submittedBy:'ms.aiman@uni.edu',createdAt:new Date(Date.now()-86400000).toISOString(),reviewedBy:'hod@uni.edu',reviewedAt:new Date(Date.now()-82800000).toISOString()},
-];
-const DEMO_LOGS = [
-  {action:'GRADE_SUBMITTED',user:'dr.sarah@uni.edu',data:{gradeId:1001},timestamp:new Date(Date.now()-3600000).toISOString()},
-  {action:'GRADE_SUBMITTED',user:'prof.tariq@uni.edu',data:{gradeId:1002},timestamp:new Date(Date.now()-7200000).toISOString()},
-  {action:'GRADE_UPDATED',user:'hod@uni.edu',data:{gradeId:1003,oldStatus:'PENDING',newStatus:'APPROVED'},timestamp:new Date(Date.now()-82800000).toISOString()},
-  {action:'USER_LOGIN',user:'hod@uni.edu',data:{},timestamp:new Date(Date.now()-1000).toISOString()},
-];
+// No demo data fallback
 
 function showSection(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -198,23 +194,23 @@ function showSection(id){
 
 async function loadGrades(section){
   try {
-  const token = localStorage.getItem('sg_token');
+  if (!token) { window.location.href = 'index.html'; return; }
 
   const res = await fetch(`${API}/grades`, {
     headers: { 'Authorization': 'Bearer ' + token }
   });
 
-  console.log("🔵 Backend status:", res.status); // 👈 ADD THIS
-
-  if (!res.ok) throw new Error();
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) window.location.href = 'index.html';
+    throw new Error();
+  }
 
   allGrades = await res.json();
+  console.log("🟢 Data loaded:", allGrades);
 
-  console.log("🟢 Real backend data loaded:", allGrades); // 👈 ADD THIS
-
-} catch {
-  console.log("🟡 Using DEMO fallback data");
-  allGrades = DEMO_GRADES;
+} catch (err) {
+  console.error("Failed to load grades:", err);
+  allGrades = [];
 }
   updateStats();
   if(section==='pending') renderPending();
@@ -275,27 +271,28 @@ async function reviewGrade(id, newStatus){
     const res=await fetch(`${API}/grades/${id}`,{
       method:'PATCH',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body:JSON.stringify({status:newStatus})
+      body:JSON.stringify({status:newStatus.toLowerCase()})
     });
-    if(!res.ok) throw new Error();
+    if(!res.ok) throw new Error('Failed to update grade');
     const updated=await res.json();
     const g=allGrades.find(x=>x.id==id);
-    if(g){g.status=updated.status;g.reviewedBy=updated.reviewedBy;g.reviewedAt=updated.reviewedAt;}
-  }catch{
-    const g=allGrades.find(x=>x.id==id);
-    if(g){g.status=newStatus;g.reviewedBy=localStorage.getItem('sg_email')||'hod@uni.edu';g.reviewedAt=new Date().toISOString();}
-    const hod=localStorage.getItem('sg_email')||'hod@uni.edu';
-    auditLogs.unshift({action:'GRADE_'+newStatus,user:hod,data:{gradeId:id},timestamp:new Date().toISOString()});
-
-    console.log("Sending PATCH request to backend...");
-    console.log("PATCH response:", updated);
+    if(g){
+      g.status=updated.status.toUpperCase();
+      g.reviewedBy=updated.approved_by || localStorage.getItem('sg_email');
+    }
+    
+    updateStats();
+    renderPending();
+    const alert=document.getElementById('review-alert');
+    alert.className='alert alert-success show';
+    alert.textContent=`✅ Grade ${id} marked as ${newStatus}`;
+    setTimeout(()=>alert.classList.remove('show'),3000);
+  }catch(err){
+    console.error("Review error:", err);
+    const alert=document.getElementById('review-alert');
+    alert.className='alert alert-red show'; // Assuming you have red alert style
+    alert.textContent=`❌ Error: ${err.message}`;
   }
-  updateStats();
-  renderPending();
-  const alert=document.getElementById('review-alert');
-  alert.className='alert alert-success show';
-  alert.textContent=`✅ Grade ${id} marked as ${newStatus}`;
-  setTimeout(()=>alert.classList.remove('show'),3000);
 }
 
 async function loadAuditLogs(){
@@ -303,9 +300,9 @@ async function loadAuditLogs(){
     const token=localStorage.getItem('sg_token');
     const res=await fetch(`${API}/grades/logs`,{headers:{'Authorization':'Bearer '+token}});
     if(!res.ok) throw new Error();
-    auditLogs=[...await res.json(),...DEMO_LOGS];
+    auditLogs=await res.json();
   }catch{
-    if(!auditLogs.length) auditLogs=DEMO_LOGS;
+    auditLogs=[];
   }
   const wrap=document.getElementById('audit-log-wrap');
   const iconMap={'GRADE_SUBMITTED':'📝','GRADE_UPDATED':'✏️','GRADE_APPROVED':'✅','GRADE_REJECTED':'❌','USER_LOGIN':'🔑'};

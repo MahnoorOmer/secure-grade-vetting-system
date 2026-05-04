@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  (function() {
+    const token = localStorage.getItem('sg_token');
+    const role = localStorage.getItem('sg_role');
+    if (!token || role !== 'Student') { window.location.href = 'index.html'; }
+  })();
+</script>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SecureGrade – Student Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -257,7 +264,7 @@
         <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Program</span><strong>BS Computer Science</strong></div>
         <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Semester</span><strong>5th Semester</strong></div>
         <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;"><span style="color:var(--muted);">Student ID</span><strong style="font-family:'JetBrains Mono',monospace;">CS-2021-001</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="color:var(--muted);">MFA Method</span><strong>🔒 Security Questions</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="color:var(--muted);">MFA Method</span><strong>📧 Email OTP</strong></div>
       </div>
     </div>
   </div>
@@ -272,8 +279,8 @@
           <div style="font-size:13px;color:var(--muted);">All your grade data is encrypted using AES-256 before transmission. Your grades are private.</div>
         </div>
         <div style="background:#d1fae5;border:1.5px solid #a7f3d0;border-radius:12px;padding:16px;">
-          <div style="font-weight:700;margin-bottom:4px;color:#059669;">✅ MFA Active – Security Questions</div>
-          <div style="font-size:13px;color:#065f46;">Your account is protected with two security questions for login verification.</div>
+          <div style="font-weight:700;margin-bottom:4px;color:#059669;">✅ MFA Active – Email OTP</div>
+          <div style="font-size:13px;color:#065f46;">Your account is protected with 6-digit email codes for login verification.</div>
         </div>
         <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
           <div style="font-weight:700;margin-bottom:4px;">📋 Session Info</div>

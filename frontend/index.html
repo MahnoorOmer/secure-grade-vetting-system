@@ -624,9 +624,9 @@ const ROLES = {
       { id: 'reg-program', label: 'Program / Major', type: 'text', placeholder: 'e.g. BS Computer Science' },
       { id: 'reg-semester', label: 'Current Semester', type: 'text', placeholder: 'e.g. 5th Semester' },
     ],
-    mfaType: 'security-questions',
-    mfaLabel: '🔒 Security Questions (Student MFA)',
-    mfaDesc: 'Answer these security questions. You\'ll need them to verify your identity on login.'
+    mfaType: 'email-otp',
+    mfaLabel: '📧 Email OTP (Student MFA)',
+    mfaDesc: 'A 6-digit code will be sent to your university email for login verification.'
   },
   Instructor: {
     icon: '👩‍🏫', label: 'Instructor',
@@ -730,24 +730,19 @@ function buildMFASetup(role, cfg) {
       <div style="font-size:13px;color:var(--muted);line-height:1.5;">${cfg.mfaDesc}</div>
     </div>`;
 
-  if (cfg.mfaType === 'security-questions') {
+  if (cfg.mfaType === 'email-otp') {
     html += `
-      <div class="field"><label>Security Question 1</label>
-        <select id="sq1">
-          <option>What was the name of your first school?</option>
-          <option>What is your mother's maiden name?</option>
-          <option>What was your childhood nickname?</option>
-        </select>
+      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--slate);">
+        📧 Your university email will receive a 6-digit OTP each time you log in.
+        Enter <strong>888888</strong> to verify setup (Demo Mode).
       </div>
-      <div class="field"><label>Answer 1</label><input type="text" id="sa1" placeholder="Your answer"/></div>
-      <div class="field"><label>Security Question 2</label>
-        <select id="sq2">
-          <option>What city were you born in?</option>
-          <option>What is your pet's name?</option>
-          <option>What was your first car?</option>
-        </select>
-      </div>
-      <div class="field"><label>Answer 2</label><input type="text" id="sa2" placeholder="Your answer"/></div>`;
+      <div class="field"><label>Enter OTP (test: 888888)</label>
+        <div class="mfa-inputs" id="email-setup-inputs">
+          ${[1, 2, 3, 4, 5, 6].map(i => 
+            `<input type="text" maxlength="1" id="email-s${i}" class="mfa-digit-input" oninput="moveFocus(this,'email-s${i+1}')" onkeydown="backFocus(event,this,'email-s${i-1}')">`
+          ).join('')}
+        </div>
+      </div>`;
   } else if (cfg.mfaType === 'totp') {
     html += `
       <div style="text-align:center;margin-bottom:16px;">
@@ -933,21 +928,20 @@ async function handleLogin() {
 
     if (!res.ok) throw new Error(data.error || 'Login failed');
 
-    // Decode role from token
+    if (data.requiresOTP) {
+      pendingLoginEmail = data.email;
+      showMFAScreen('OTP'); // Special case for new OTP system
+      return;
+    }
+
+    // This part might not be reached if OTP is required
     const payload = JSON.parse(atob(data.token.split('.')[1]));
     localStorage.setItem('sg_token', data.token);
     localStorage.setItem('sg_role', payload.role);
     localStorage.setItem('sg_email', payload.email);
-
-    pendingLoginEmail = email;
-    pendingLoginPassword = password;
-
-    // Proceed to MFA
-    showMFAScreen(payload.role, data.token);
+    redirectToDashboard(payload.role);
 
   } catch (err) {
-    // 🛑 REMOVED DEMO LOGIC
-    // Now it only shows the real error and stops the login process
     console.error("Login error:", err);
     showAlert('login-alert', 'error', `❌ ${err.message}`);
   } finally {
@@ -961,89 +955,57 @@ async function handleLogin() {
 // ══════════════════════════════════════
 // MFA VERIFICATION
 // ══════════════════════════════════════
-function showMFAScreen(role, token) {
-  const mfaType = ROLES[role]?.mfaType || 'security-questions';
-  const cfg = ROLES[role] || ROLES['Student'];
+function showMFAScreen(role) {
+  document.getElementById('mfa-icon').textContent = '🔐';
+  document.getElementById('mfa-title').textContent = `Two-Factor Authentication`;
+  document.getElementById('mfa-sub').textContent = 'Enter the 6-digit code sent to your email (check server console).';
 
-  document.getElementById('mfa-icon').textContent = cfg.icon;
-  document.getElementById('mfa-title').textContent = `Verify Identity – ${cfg.label}`;
-  document.getElementById('mfa-sub').textContent = cfg.mfaDesc;
-
-  let html = '';
-  if (mfaType === 'security-questions') {
-    html = `
-      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
-        🔒 Student MFA – Security Questions
-      </div>
-      <div class="field"><label>Security Question</label>
-        <div style="font-size:14px;color:var(--slate);padding:10px;background:#f8fafc;border-radius:8px;margin-bottom:10px;">
-          What was the name of your first school?
-        </div>
-        <input type="text" id="mfa-sq-answer" placeholder="Your answer"/>
-      </div>`;
-  } else if (mfaType === 'totp') {
-    html = `
-      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
-        📱 Instructor MFA – Authenticator App Code
-      </div>
-      <div class="mfa-inputs">
-        ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="mfa-t${i}" oninput="moveFocus(this,'mfa-t${i+1}')" onkeydown="backFocus(event,this,'mfa-t${i-1}')">`).join('')}
-      </div>
-      <div style="text-align:center;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Demo: enter any 6 digits</div>`;
-  } else if (mfaType === 'sms-otp') {
-    html = `
-      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
-        📲 HoD MFA – SMS One-Time Password
-      </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">OTP sent to your registered phone. <strong>Demo OTP: 123456</strong></div>
-      <div class="mfa-inputs">
-        ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="mfa-s${i}" oninput="moveFocus(this,'mfa-s${i+1}')" onkeydown="backFocus(event,this,'mfa-s${i-1}')">`).join('')}
-      </div>`;
-  } else if (mfaType === 'hardware-key') {
-    html = `
-      <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
-        🔑 Admin MFA – Hardware Security Key
-      </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">This is a simulated hardware key for demo. Click the button below to verify.</div>
-      <div class="field">
-        <label>Security Key Output</label>
-        <input type="text" id="mfa-hk" value="ADMIN-KEY-VERIFIED" style="font-family:'JetBrains Mono',monospace;font-size:13px;background:#f0f6ff;"/>
-        <button type="button" onclick="document.getElementById('mfa-hk').value='ADMIN-KEY-VERIFIED-'+Date.now();" style="margin-top:8px;padding:10px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;font-weight:700;cursor:pointer;font-size:13px;width:100%;">
-          🔑 Simulate Hardware Key Touch
-        </button>
-      </div>`;
-  }
+  let html = `
+    <div style="background:var(--blue-pale);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--blue);font-weight:600;">
+      🛡️ Secure Verification Required
+    </div>
+    <div class="mfa-inputs">
+      ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="mfa-v${i}" oninput="moveFocus(this,'mfa-v${i+1}')" onkeydown="backFocus(event,this,'mfa-v${i-1}')">`).join('')}
+    </div>`;
 
   document.getElementById('mfa-content').innerHTML = html;
   showScreen('mfa');
 }
 
-function verifyMFA() {
-  const role = localStorage.getItem('sg_role');
-  const cfg = ROLES[role] || ROLES['Student'];
-  let valid = false;
-
-  if (cfg.mfaType === 'security-questions') {
-    const ans = document.getElementById('mfa-sq-answer')?.value.trim();
-    valid = ans && ans.length > 2;
-  } else if (cfg.mfaType === 'totp') {
-    const code = [1,2,3,4,5,6].map(i => document.getElementById(`mfa-t${i}`)?.value || '').join('');
-    valid = /^\d{6}$/.test(code);
-  } else if (cfg.mfaType === 'sms-otp') {
-    const code = [1,2,3,4,5,6].map(i => document.getElementById(`mfa-s${i}`)?.value || '').join('');
-    valid = code === '123456';
-  } else if (cfg.mfaType === 'hardware-key') {
-    const code = document.getElementById('mfa-hk')?.value.trim();
-    valid = true; // Demo mode: hardware key is always accepted
-  }
-
-  if (!valid) {
-    showAlert('mfa-alert', 'error', '❌ Verification failed. Please check your code.');
+async function verifyMFA() {
+  const otp = [1,2,3,4,5,6].map(i => document.getElementById(`mfa-v${i}`)?.value || '').join('');
+  if (otp.length < 6) {
+    showAlert('mfa-alert', 'error', '❌ Please enter the full 6-digit code.');
     return;
   }
 
-  showAlert('mfa-alert', 'success', '✅ Identity verified! Loading your dashboard...');
-  setTimeout(() => redirectToDashboard(role), 1000);
+  const btn = document.getElementById('mfa-btn');
+  btn.innerHTML = '<div class="spinner"></div> Verifying...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: pendingLoginEmail, otp })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+    localStorage.setItem('sg_token', data.token);
+    localStorage.setItem('sg_role', data.role);
+    localStorage.setItem('sg_email', pendingLoginEmail);
+
+    showAlert('mfa-alert', 'success', '✅ Identity verified! Loading your dashboard...');
+    setTimeout(() => redirectToDashboard(data.role), 1000);
+  } catch (err) {
+    console.error("MFA error:", err);
+    showAlert('mfa-alert', 'error', `❌ ${err.message}`);
+  } finally {
+    btn.innerHTML = 'Verify Identity';
+    btn.disabled = false;
+  }
 }
 
 function redirectToDashboard(role) {

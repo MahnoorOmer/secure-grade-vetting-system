@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  (function() {
+    const token = localStorage.getItem('sg_token');
+    const role = localStorage.getItem('sg_role');
+    if (!token || role !== 'Admin') { window.location.href = 'index.html'; }
+  })();
+</script>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SecureGrade – Admin Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -134,7 +141,7 @@
       <table>
         <thead><tr><th>Role</th><th>Count</th><th>MFA Type</th><th>Permissions</th></tr></thead>
         <tbody>
-          <tr><td>👨‍🎓 Student</td><td><span class="badge badge-blue">18</span></td><td>Security Questions</td><td>View own grades only</td></tr>
+          <tr><td>👨‍🎓 Student</td><td><span class="badge badge-blue">18</span></td><td>Email OTP</td><td>View own grades only</td></tr>
           <tr><td>👩‍🏫 Instructor</td><td><span class="badge badge-blue">4</span></td><td>TOTP Authenticator</td><td>Submit grades</td></tr>
           <tr><td>🏛️ HoD</td><td><span class="badge badge-blue">1</span></td><td>SMS OTP</td><td>View · Approve · Reject · Audit</td></tr>
           <tr><td>⚙️ Admin</td><td><span class="badge badge-blue">1</span></td><td>Hardware Key</td><td>Full system access</td></tr>
@@ -171,7 +178,7 @@
       <table>
         <thead><tr><th>Name / Email</th><th>Role</th><th>MFA</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="users-tbody">
-          <tr><td><strong>Ali Hassan</strong><br><span style="font-size:12px;color:var(--muted);">ali@uni.edu</span></td><td><span class="badge badge-blue">Student</span></td><td>Security Q</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
+          <tr><td><strong>Ali Hassan</strong><br><span style="font-size:12px;color:var(--muted);">ali@uni.edu</span></td><td><span class="badge badge-blue">Student</span></td><td>Email OTP</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
           <tr><td><strong>Dr. Sarah Ahmed</strong><br><span style="font-size:12px;color:var(--muted);">dr.sarah@uni.edu</span></td><td><span class="badge badge-purple">Instructor</span></td><td>TOTP</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
           <tr><td><strong>Prof. Tariq Malik</strong><br><span style="font-size:12px;color:var(--muted);">hod@uni.edu</span></td><td><span class="badge badge-ink">HoD</span></td><td>SMS OTP</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn">⏸ Suspend</button><button class="action-btn btn-danger">🗑 Delete</button></td></tr>
           <tr><td><strong>System Admin</strong><br><span style="font-size:12px;color:var(--muted);">admin@uni.edu</span></td><td><span class="badge badge-red">Admin</span></td><td>Hardware Key</td><td><span class="badge badge-green">Active</span></td><td colspan="1" style="color:var(--muted);font-size:12px;">Protected</td></tr>
@@ -283,7 +290,7 @@ function addUser(){
   if(!name||!email||!pass){
     const a=document.getElementById('add-user-alert');a.className='alert alert-error show';a.textContent='⚠️ Fill all fields.';return;
   }
-  const mfaMap={Student:'Security Q',Instructor:'TOTP',HoD:'SMS OTP',Admin:'Hardware Key'};
+  const mfaMap={Student:'Email OTP',Instructor:'TOTP',HoD:'SMS OTP',Admin:'Hardware Key'};
   const badgeMap={Student:'badge-blue',Instructor:'badge-purple',HoD:'badge-ink',Admin:'badge-red'};
   const row=document.createElement('tr');
   row.innerHTML=`<td><strong>${name}</strong><br><span style="font-size:12px;color:var(--muted);">${email}</span></td><td><span class="badge ${badgeMap[role]}">${role}</span></td><td>${mfaMap[role]}</td><td><span class="badge badge-green">Active</span></td><td><button class="action-btn btn-warn" onclick="this.closest('tr').style.opacity='0.5'">⏸ Suspend</button><button class="action-btn btn-danger" onclick="this.closest('tr').remove()">🗑 Delete</button></td>`;

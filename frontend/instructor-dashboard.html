@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  (function() {
+    const token = localStorage.getItem('sg_token');
+    const role = localStorage.getItem('sg_role');
+    if (!token || role !== 'Instructor') { window.location.href = 'index.html'; }
+  })();
+</script>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SecureGrade – Instructor Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
@@ -255,10 +262,8 @@ async function submitGrade(){
     showAlert('submit-alert','success','✅ Grade submitted and encrypted successfully!');
     clearForm();
   }catch(e){
-    // Demo mode
-    addSubmission({...gradeData,id:Date.now(),status:'PENDING',createdAt:new Date().toISOString()});
-    showAlert('submit-alert','success','✅ Grade submitted successfully! (Demo mode)');
-    clearForm();
+    console.error("Submission error:", e);
+    showAlert('submit-alert','error','❌ Error: ' + e.message);
   }finally{
     btn.innerHTML='📤 Submit Grade';
     btn.disabled=false;

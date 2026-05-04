@@ -91,12 +91,13 @@ router.patch("/:id", authMiddleware, roleMiddleware(["HoD"]), async (req, res) =
     const oldStatus = current.rows[0].status;
 
     const result = await pool.query(
-      `UPDATE grades SET status = $1, approved_by = $2, updated_at = NOW()
+      `UPDATE grades SET status = $1, approved_by = $2, updated_at = CURRENT_TIMESTAMP
        WHERE id = $3 RETURNING id, data, signature, status, updated_at`,
       [req.body.status, req.user.id, req.params.id]
     );
     const updated = result.rows[0];
-    await addLog(req.user.email, "GRADE_STATUS_UPDATED", { gradeId: updated.id, oldStatus, newStatus: updated.status }, req.user.id);
+    const actionName = req.body.status === 'approved' ? 'GRADE_APPROVED' : 'GRADE_REJECTED';
+    await addLog(req.user.email, actionName, { gradeId: updated.id, oldStatus, newStatus: updated.status }, req.user.id);
     res.json(updated);
   } catch (err) {
     console.error("Update grade error:", err.message);
