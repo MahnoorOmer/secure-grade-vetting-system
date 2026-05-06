@@ -515,11 +515,6 @@
           <div class="role-name">Head of Dept</div>
           <div class="role-desc">Approve grades</div>
         </div>
-        <div class="role-card" onclick="selectRole('Admin')">
-          <div class="role-emoji">⚙️</div>
-          <div class="role-name">Admin</div>
-          <div class="role-desc">Manage system</div>
-        </div>
       </div>
 
       <p style="text-align:center;font-size:14px;color:var(--muted);">
@@ -542,7 +537,6 @@
       <div class="progress-dots">
         <div class="dot active" id="dot-1"></div>
         <div class="dot" id="dot-2"></div>
-        <div class="dot" id="dot-3"></div>
       </div>
 
       <div class="security-bar">
@@ -576,20 +570,12 @@
         </div>
         <div style="display:flex;gap:10px;">
           <button class="btn btn-outline" onclick="prevSignupStep()">← Back</button>
-          <button class="btn btn-primary" onclick="nextSignupStep()">Continue →</button>
-        </div>
-      </div>
-
-      <!-- Step 3: MFA Setup -->
-      <div id="signup-step-3" style="display:none;">
-        <div id="signup-mfa-setup"></div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-outline" onclick="prevSignupStep()">← Back</button>
           <button class="btn btn-primary" id="signup-submit-btn" onclick="handleRegister()">
             Create Account
           </button>
         </div>
       </div>
+
 
       <p style="text-align:center;margin-top:16px;">
         <button class="btn btn-ghost" style="width:auto;" onclick="showScreen('role-select')">← Change Role</button>
@@ -623,6 +609,7 @@ const ROLES = {
       { id: 'reg-student-id', label: 'Student ID', type: 'text', placeholder: 'e.g. CS-2021-001' },
       { id: 'reg-program', label: 'Program / Major', type: 'text', placeholder: 'e.g. BS Computer Science' },
       { id: 'reg-semester', label: 'Current Semester', type: 'text', placeholder: 'e.g. 5th Semester' },
+      { id: 'reg-courses', label: 'Registered Courses', type: 'text', placeholder: 'e.g. CS101, MT102' },
     ],
     mfaType: 'email-otp',
     mfaLabel: '📧 Email OTP (Student MFA)',
@@ -651,18 +638,6 @@ const ROLES = {
     mfaType: 'sms-otp',
     mfaLabel: '📲 SMS OTP (HoD MFA)',
     mfaDesc: 'An OTP will be sent to your registered phone number each time you log in.'
-  },
-  Admin: {
-    icon: '⚙️', label: 'System Administrator',
-    fields: [
-      { id: 'reg-name', label: 'Full Name', type: 'text', placeholder: 'e.g. Usman Raza' },
-      { id: 'reg-emp-id', label: 'Admin ID', type: 'text', placeholder: 'e.g. ADM-001' },
-      { id: 'reg-dept', label: 'Department', type: 'text', placeholder: 'e.g. IT Administration' },
-      { id: 'reg-phone', label: 'Secure Phone', type: 'tel', placeholder: '+92-300-0000001' },
-    ],
-    mfaType: 'hardware-key',
-    mfaLabel: '🔑 Hardware Security Key (Admin MFA)',
-    mfaDesc: 'Admin accounts require a hardware security key (YubiKey-compatible). Enter your device serial and PIN to register.'
   }
 };
 
@@ -715,110 +690,18 @@ function buildSignupForm(role) {
   if (!isDoubleRow) { /* already no wrapping needed */ }
   document.getElementById('signup-fields').innerHTML = html;
 
-  // MFA setup for step 3
-  buildMFASetup(role, cfg);
-
   // Reset steps
   setSignupStep(1);
   showScreen('signup');
 }
 
-function buildMFASetup(role, cfg) {
-  let html = `
-    <div style="background:var(--blue-pale);border:1.5px solid rgba(29,78,216,0.15);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
-      <div style="font-weight:700;font-size:14px;color:var(--blue);margin-bottom:6px;">${cfg.mfaLabel}</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.5;">${cfg.mfaDesc}</div>
-    </div>`;
-
-  if (cfg.mfaType === 'email-otp') {
-    html += `
-      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--slate);">
-        📧 Your university email will receive a 6-digit OTP each time you log in.
-        Enter <strong>888888</strong> to verify setup (Demo Mode).
-      </div>
-      <div class="field"><label>Enter OTP (test: 888888)</label>
-        <div class="mfa-inputs" id="email-setup-inputs">
-          ${[1, 2, 3, 4, 5, 6].map(i => 
-            `<input type="text" maxlength="1" id="email-s${i}" class="mfa-digit-input" oninput="moveFocus(this,'email-s${i+1}')" onkeydown="backFocus(event,this,'email-s${i-1}')">`
-          ).join('')}
-        </div>
-      </div>`;
-  } else if (cfg.mfaType === 'totp') {
-    html += `
-      <div style="text-align:center;margin-bottom:16px;">
-        <div style="display:inline-block;background:white;padding:16px;border-radius:12px;border:1.5px solid var(--border);">
-          <!-- Simulated QR Code -->
-          <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
-            <rect width="120" height="120" fill="white"/>
-            ${generateFakeQR()}
-          </svg>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace;">
-          Or enter code: <strong>JBSWY3DPEHPK3PXP</strong>
-        </div>
-      </div>
-      <div class="field"><label>Enter 6-digit code from app</label>
-        <div class="mfa-inputs" id="totp-setup-inputs">
-          ${[1,2,3,4,5,6].map(i => `<input type="text" maxlength="1" id="totp-s${i}" oninput="moveFocus(this,'totp-s${i+1}')" onkeydown="backFocus(event,this,'totp-s${i-1}')">`).join('')}
-        </div>
-      </div>`;
-  } else if (cfg.mfaType === 'sms-otp') {
-    html += `
-      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--slate);">
-        📲 Your phone number from Step 1 will receive a 6-digit OTP each time you log in.
-        A <strong>test OTP</strong> has been simulated below — enter <strong>123456</strong> to verify setup.
-      </div>
-      <div class="field"><label>Enter OTP (test: 123456)</label>
-        <div class="mfa-inputs" id="sms-setup-inputs">
-          ${[1, 2, 3, 4, 5, 6].map(i => 
-            `<input type="text" maxlength="1" id="sms-s${i}" class="mfa-digit-input">`
-          ).join('')}
-        </div>
-      </div>`;
-  } else if (cfg.mfaType === 'hardware-key') {
-    html += `
-      <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:13px;color:var(--slate);margin-bottom:12px;">🔑 Register your hardware security key (Demo Mode)</div>
-        <div class="field"><label>Device Serial Number</label>
-          <input type="text" id="hk-serial" value="YK-123456789" style="font-family:'JetBrains Mono',monospace;"/>
-        </div>
-        <div class="field"><label>Device PIN</label>
-          <input type="password" id="hk-pin" value="123456" maxlength="6"/>
-        </div>
-      </div>
-      <div class="field"><label>Security Key Output</label>
-        <input type="text" id="hk-code" placeholder="Click button below to simulate" style="font-family:'JetBrains Mono',monospace;"/>
-        <button type="button" onclick="simulateTouchKey()" style="margin-top:8px;padding:10px 18px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;font-weight:700;cursor:pointer;font-size:13px;width:100%;">
-          🔑 Click Here to Simulate Hardware Key Touch
-        </button>
-      </div>`;
-  }
-  document.getElementById('signup-mfa-setup').innerHTML = html;
-}
-
-function generateFakeQR() {
-  let rects = '';
-  const seed = 42;
-  for (let r = 0; r < 12; r++) {
-    for (let c = 0; c < 12; c++) {
-      const val = Math.sin(r * 13 + c * 7 + seed) > 0.1;
-      if (val) rects += `<rect x="${c*10}" y="${r*10}" width="9" height="9" fill="#0f172a" rx="1"/>`;
-    }
-  }
-  return rects;
-}
-
-function simulateTouchKey() {
-  document.getElementById('hk-code').value = 'ccccccibgenhrjcgkgtgfbrgfcgetfghdfhlubeekrdjh';
-  showAlert('signup-alert', 'success', '🔑 Hardware key touch simulated!');
-}
 
 // ══════════════════════════════════════
 // SIGNUP STEPS
 // ══════════════════════════════════════
 function setSignupStep(n) {
   signupStep = n;
-  [1,2,3].forEach(i => {
+  [1,2].forEach(i => {
     document.getElementById(`signup-step-${i}`).style.display = (i === n) ? 'block' : 'none';
     const dot = document.getElementById(`dot-${i}`);
     dot.className = 'dot' + (i < n ? ' done' : i === n ? ' active' : '');
@@ -844,7 +727,8 @@ function nextSignupStep() {
     if (!email.includes('@')) { showAlert('signup-alert', 'error', '⚠️ Enter a valid email.'); return; }
     if (pw.length < 8) { showAlert('signup-alert', 'error', '⚠️ Password must be at least 8 characters.'); return; }
     if (pw !== conf) { showAlert('signup-alert', 'error', '⚠️ Passwords do not match.'); return; }
-    setSignupStep(3);
+    // Step 3 (MFA Setup) is removed for registration as per user request
+    handleRegister();
   }
   hideAlert('signup-alert');
 }
@@ -878,7 +762,30 @@ async function handleRegister() {
   
   // 🛑 FIX: Ensure currentRole is captured or defaulted
   // If you use a dropdown or buttons, grab the value here
-  const role = window.currentRole || 'Student'; 
+  const role = currentRole || 'Student'; 
+  
+  // Collect all profile fields
+  const profileData = {};
+  const cfg = ROLES[role];
+  if (cfg && cfg.fields) {
+    cfg.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (el) {
+        // Map frontend IDs to backend keys
+        const keyMap = {
+          'reg-name': 'name',
+          'reg-student-id': 'studentId',
+          'reg-emp-id': 'empId',
+          'reg-dept': 'dept',
+          'reg-phone': 'phone',
+          'reg-program': 'program',
+          'reg-semester': 'semester',
+          'reg-courses': 'courses'
+        };
+        profileData[keyMap[f.id] || f.id] = el.value.trim();
+      }
+    });
+  }
 
   const btn = document.getElementById('signup-submit-btn');
   btn.innerHTML = '<div class="spinner"></div> Creating Account...';
@@ -888,14 +795,23 @@ async function handleRegister() {
     const res = await fetch(`${API}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }) // Ensure these keys match backend
+      body: JSON.stringify({ email, password, role, ...profileData }) // Ensure these keys match backend
     });
     
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Registration failed');
+    if (!res.ok) {
+      let msg = data.error || 'Registration failed';
+      if (data.details && Array.isArray(data.details)) {
+        msg += ': ' + data.details.map(d => d.message).join(', ');
+      }
+      throw new Error(msg);
+    }
 
     showAlert('signup-alert', 'success', '✅ Account created! Redirecting to login...');
-    setTimeout(() => showScreen('login'), 1500);
+    setTimeout(() => {
+      showScreen('login');
+      setSignupStep(1); // Reset for next time
+    }, 1500);
   } catch (err) {
     console.error("Registration error:", err);
     showAlert('signup-alert', 'error', `❌ ${err.message}`);
@@ -950,7 +866,6 @@ async function handleLogin() {
   }
 }
 
-// You can now safely delete the detectDemoRole(email) function entirely.
 
 // ══════════════════════════════════════
 // MFA VERIFICATION
@@ -1013,7 +928,6 @@ function redirectToDashboard(role) {
     Student: 'student-dashboard.html',
     Instructor: 'instructor-dashboard.html',
     HoD: 'hod-dashboard.html',
-    Admin: 'admin-dashboard.html',
   };
   window.location.href = dashMap[role] || 'student-dashboard.html';
 }

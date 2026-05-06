@@ -8,6 +8,7 @@ const crypto   = require("crypto");
 const pool     = require("../../database/db");
 const { registerSchema, loginSchema } = require("../validators/authValidator");
 const { addLog } = require("../middleware/auditlogger");
+const authMiddleware = require("../middleware/authmiddleware");
 
 // =====================
 // REGISTER
@@ -15,10 +16,11 @@ const { addLog } = require("../middleware/auditlogger");
 router.post("/register", async (req, res) => {
   try {
     const result = registerSchema.safeParse(req.body);
-    console.log(chalk.magenta("📥 RECV REGISTER:"), req.body.email);
+    console.log(chalk.blue.bold("📝 [REGISTRATION ATTEMPT]: ") + chalk.white(req.body.email));
 
     if (!result.success) {
-      return res.status(400).json({ error: "Invalid input data" });
+      console.error(chalk.red("❌ Validation Error:"), result.error.errors);
+      return res.status(400).json({ error: "Invalid input data", details: result.error.errors });
     }
 
     const { email, password, role } = result.data;
@@ -30,7 +32,29 @@ router.post("/register", async (req, res) => {
       "SELECT id FROM users WHERE email = $1", [normalizedEmail]
     );
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: "User already exists" });
+      return res.status(400).json({ error: "User already exists with this email" });
+    }
+
+    // Check for duplicate Student ID or Emp ID in profile
+    const studentId = req.body.studentId;
+    const empId = req.body.empId;
+
+    if (studentId) {
+      const existingStudent = await pool.query(
+        "SELECT id FROM users WHERE json_extract(profile, '$.student_id') = $1", [studentId]
+      );
+      if (existingStudent.rows.length > 0) {
+        return res.status(400).json({ error: "User with this Student ID already exists" });
+      }
+    }
+
+    if (empId) {
+      const existingEmp = await pool.query(
+        "SELECT id FROM users WHERE json_extract(profile, '$.emp_id') = $1", [empId]
+      );
+      if (existingEmp.rows.length > 0) {
+        return res.status(400).json({ error: "User with this Employee ID already exists" });
+      }
     }
 
     const password_hash = await bcrypt.hash(password, 10);
@@ -110,6 +134,10 @@ router.post("/login", async (req, res) => {
     );
 
     console.log(chalk.yellow("🔑 OTP GENERATED:"), chalk.bold(otp), "for", normalizedEmail);
+    
+    if (user.role === 'Instructor' || user.role === 'HoD') {
+      console.log(chalk.cyan.bold(`📢 [${user.role.toUpperCase()} OTP]: `) + chalk.bgYellow.black(` ${otp} `));
+    }
     // In a real system, we'd send an email here.
     
     res.json({ message: "OTP sent to your registered email", requiresOTP: true, email: normalizedEmail });
@@ -171,6 +199,57 @@ router.post("/verify-otp", async (req, res) => {
   } catch (err) {
     console.error(chalk.red("🔥 OTP Verify Crash:"), err.message);
     res.status(500).json({ error: "Internal Server error" });
+  }
+});
+
+// =====================
+// GET PROFILE
+// =====================
+router.get("/profile", authMiddleware, async (req, res) => {
+  try {
+    const userResult = await pool.query("SELECT profile FROM users WHERE id = $1", [req.user.id]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json(userResult.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+// =====================
+// UPDATE COURSES
+// =====================
+router.put("/profile/courses", authMiddleware, async (req, res) => {
+  try {
+    const { name, instructor, action, index } = req.body;
+    const userResult = await pool.query("SELECT profile FROM users WHERE id = $1", [req.user.id]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+
+    let profile = JSON.parse(userResult.rows[0].profile || "{}");
+    let courses = [];
+    
+    if (profile.courses) {
+      if (Array.isArray(profile.courses)) {
+        courses = profile.courses;
+      } else if (typeof profile.courses === 'string') {
+        courses = profile.courses.split(',').map(c => ({ name: c.trim(), instructor: 'N/A' })).filter(c => c.name);
+      }
+    }
+
+    if (action === "add" && name) {
+      if (!courses.find(c => c.name === name)) {
+        courses.push({ name, instructor: instructor || 'N/A' });
+      }
+    } else if (action === "remove" && index !== undefined) {
+      courses.splice(index, 1);
+    }
+
+    profile.courses = courses;
+    await pool.query("UPDATE users SET profile = $1 WHERE id = $2", [JSON.stringify(profile), req.user.id]);
+
+    res.json({ message: "Courses updated successfully", profile });
+  } catch (err) {
+    console.error("Course update error:", err);
+    res.status(500).json({ error: "Failed to update courses" });
   }
 });
 

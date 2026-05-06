@@ -4,22 +4,59 @@
 This project is developed for the Secure Software Development course.
 
 ## Project Description
+
 The Secure Digital Grade Vetting System is a web-based platform designed to ensure secure submission and approval of academic grades. The system prevents grade manipulation through digital signatures, role-based access control (RBAC), and tamper-proof audit logs.
 
 ## Team Members
-- Mahnoor Omer 
+
+- Mahnoor Omer
 - Bushra Naz
 - Shariq Saqib
 
-## Deliverables:
+## Deliverables
 
 ### Deliverable 1
+
 Security Requirements and Planning:
+
 - Project Overview
 - Security Requirements
 - Risk Management
 - Threat Modeling
 - System Architecture
+
+### Deliverable 2
+
+Security Implementation:
+
+- Database Schema with Cryptographic Hashes
+- RBAC Implementation
+- Secure APIs
+- Tamper-Evident Audit Logs
+
+### Deliverable 3
+
+Testing:
+
+- Unit Tests
+- Integration Tests
+- Security Tests
+
+### Deliverable 4
+
+Documentation:
+
+- Project Report
+- User Manual
+- Security Analysis
+
+### Deliverable 5
+
+Presentation:
+
+- System Demonstration
+- Security Features Walkthrough
+- Q&A Session
 
 # Running the project
 

@@ -234,15 +234,18 @@
       <div class="page-sub">Current semester registrations</div>
     </div>
     <div class="card">
+      <div class="card-header">
+        <div class="card-title">Register New Course</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:20px;">
+        <input type="text" id="new-course-input" placeholder="Course Code/Name (e.g. CS101)">
+        <input type="text" id="new-instructor-input" placeholder="Instructor Name (e.g. Dr. Smith)">
+        <button class="btn btn-primary" onclick="addCourse()" style="width:auto;padding:0 24px;">Add Course</button>
+      </div>
       <table>
-        <thead><tr><th>Course Code</th><th>Course Name</th><th>Credits</th><th>Instructor</th><th>Schedule</th></tr></thead>
-        <tbody>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">CY321</td><td>Secure Software Development</td><td>3</td><td>Dr. Sarah Ahmed</td><td>Mon/Wed 9-10:30</td></tr>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">CS401</td><td>Design & Analysis of Algorithms</td><td>3</td><td>Prof. Tariq Mahmood</td><td>Tue/Thu 11-12:30</td></tr>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">CS350</td><td>Database Systems</td><td>3</td><td>Ms. Aiman Noor</td><td>Mon/Wed 2-3:30</td></tr>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">CS360</td><td>Computer Networks</td><td>3</td><td>Dr. Usman Raza</td><td>Fri 9-12</td></tr>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">CS380</td><td>Operating System Concepts</td><td>3</td><td>Mr. Bilal Sheikh</td><td>Tue/Thu 2-3:30</td></tr>
-          <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:700;">HU201</td><td>Business Communication</td><td>2</td><td>Ms. Fatima Ali</td><td>Wed 4-5:30</td></tr>
+        <thead><tr><th>Course</th><th>Instructor</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="course-list-body">
+          <!-- Dynamic courses here -->
         </tbody>
       </table>
     </div>
@@ -299,12 +302,119 @@ function showSection(id){
   event.currentTarget.classList.add('active');
 }
 function logout(){localStorage.clear();window.location.href='index.html';}
-window.onload=()=>{
-  const email=localStorage.getItem('sg_email')||'student@uni.edu';
-  document.getElementById('user-name-display').textContent=email.split('@')[0];
-  document.getElementById('profile-name').textContent=email.split('@')[0];
-  document.getElementById('profile-email').textContent=email;
+window.onload = async () => {
+  const email = localStorage.getItem('sg_email') || 'student@uni.edu';
+  document.getElementById('user-name-display').textContent = email.split('@')[0];
+  document.getElementById('profile-name').textContent = email.split('@')[0];
+  document.getElementById('profile-email').textContent = email;
+  
+  await loadCourses();
 };
+
+async function loadCourses() {
+  const token = localStorage.getItem('sg_token');
+  try {
+    const res = await fetch('/auth/profile', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const profile = typeof data.profile === 'string' ? JSON.parse(data.profile) : data.profile;
+      let courses = [];
+      if (profile.courses) {
+        if (Array.isArray(profile.courses)) {
+          courses = profile.courses;
+        } else {
+          // Backward compatibility for string-based courses
+          courses = profile.courses.split(',').map(c => ({ name: c.trim(), instructor: 'N/A' })).filter(c => c.name);
+        }
+      }
+      renderCourses(courses);
+      renderGrades(courses);
+    }
+  } catch (err) {
+    console.error("Failed to load courses:", err);
+  }
+}
+
+function renderCourses(courses) {
+  const tbody = document.getElementById('course-list-body');
+  tbody.innerHTML = courses.map((c, i) => `
+    <tr>
+      <td style="font-weight:700;">${c.name || c}</td>
+      <td>${c.instructor || 'N/A'}</td>
+      <td><span class="badge badge-blue">Registered</span></td>
+      <td><button onclick="removeCourse(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-weight:600;">Remove</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);">No courses registered yet.</td></tr>';
+}
+
+function renderGrades(courses) {
+  const tbody = document.querySelector('#sec-grades table tbody');
+  if (!tbody) return;
+  
+  // Update stats
+  document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = courses.length;
+
+  tbody.innerHTML = courses.map(c => `
+    <tr>
+      <td><strong>${c.name || c}</strong><br><span style="font-size:12px;color:var(--muted);">3 Credits</span></td>
+      <td>${c.instructor || 'N/A'}</td>
+      <td><span style="font-family:'JetBrains Mono',monospace;font-weight:700;">—</span></td>
+      <td><span class="grade-pill" style="background:var(--border);color:var(--muted);font-size:12px;">PENDING</span></td>
+      <td><span class="badge badge-warn">⏳ Registered</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No courses registered.</td></tr>';
+}
+
+async function addCourse() {
+  const nameInput = document.getElementById('new-course-input');
+  const instInput = document.getElementById('new-instructor-input');
+  const name = nameInput.value.trim();
+  const instructor = instInput.value.trim();
+  if (!name) return;
+
+  const token = localStorage.getItem('sg_token');
+  try {
+    const res = await fetch('/auth/profile/courses', {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, instructor, action: 'add' })
+    });
+    if (res.ok) {
+      nameInput.value = '';
+      instInput.value = '';
+      await loadCourses();
+    } else {
+      const data = await res.json();
+      alert(data.error || "Failed to add course");
+    }
+  } catch (err) {
+    console.error("Add course error:", err);
+  }
+}
+
+async function removeCourse(index) {
+  const token = localStorage.getItem('sg_token');
+  try {
+    const res = await fetch('/auth/profile/courses', {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ index, action: 'remove' })
+    });
+    if (res.ok) {
+      await loadCourses();
+    }
+  } catch (err) {
+    console.error("Remove course error:", err);
+  }
+}
 </script>
 </body>
 </html>
